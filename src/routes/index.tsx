@@ -19,15 +19,21 @@ function Landing() {
       <div className="pointer-events-none absolute inset-0 bg-gradient-mesh" />
 
       <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6">
-        <div className="flex items-center gap-2">
+        <Link to="/" className="flex items-center gap-2">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-sunset shadow-glow">
             <Bot className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-bold">
-            <span className="text-gradient-sunset">BOT</span> Validity
+            <span className="text-gradient-sunset">APPLICATION</span> Validity
           </span>
-        </div>
-        <div className="flex items-center gap-2">
+        </Link>
+        <div className="flex items-center gap-1 sm:gap-2">
+          <Link to="/about" className="hidden sm:block">
+            <Button variant="ghost" size="sm">About</Button>
+          </Link>
+          <Link to="/contact" className="hidden sm:block">
+            <Button variant="ghost" size="sm">Contact</Button>
+          </Link>
           <Link to="/login">
             <Button variant="ghost" size="sm">Log in</Button>
           </Link>
@@ -51,10 +57,10 @@ function Landing() {
             Demo mode — data lives in your browser
           </span>
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
-            Manage your <span className="text-gradient-sunset">BOT validity</span> APIs in one place
+            Manage your <span className="text-gradient-sunset">APPLICATION validity</span> APIs in one place
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
-            Generate unique IDs, set expiry dates, block or unblock instantly. Each BOT gets its own
+            Generate unique IDs, set expiry dates, block or unblock instantly. Each APPLICATION gets its own
             HTTPS endpoint that returns live status.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -67,12 +73,17 @@ function Landing() {
               <Button size="lg" variant="outline">I already have an account</Button>
             </Link>
           </div>
+          <div className="mt-4 flex items-center justify-center gap-4 text-sm text-muted-foreground sm:hidden">
+            <Link to="/about" className="hover:text-foreground">About</Link>
+            <span aria-hidden>·</span>
+            <Link to="/contact" className="hover:text-foreground">Contact</Link>
+          </div>
         </motion.div>
 
         <div className="mx-auto mt-20 grid max-w-5xl gap-4 sm:grid-cols-3">
           {[
-            { icon: Zap, title: "Instant endpoints", text: "Each BOT gets a unique URL the moment it's created." },
-            { icon: ShieldCheck, title: "Full control", text: "Block, unblock, or delete BOTs anytime — state persists." },
+            { icon: Zap, title: "Instant endpoints", text: "Each APPLICATION gets a unique URL the moment it's created." },
+            { icon: ShieldCheck, title: "Full control", text: "Block, unblock, or delete APPLICATIONs anytime — state persists." },
             { icon: KeyRound, title: "Secure access", text: "OTP verification on signup, email change, and reset." },
           ].map((f, i) => (
             <motion.div
