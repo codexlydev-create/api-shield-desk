@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { BadgeCheck, KeyRound, Loader2, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
-import { hashPassword, otpStore, sessionStore, usersStore } from "@/lib/storage";
+import { tokenStore, profileApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ import {
 
 export const Route = createFileRoute("/profile")({
   beforeLoad: () => {
-    if (typeof window !== "undefined" && !sessionStore.get()) {
+    if (typeof window !== "undefined" && !tokenStore.get()) {
       throw redirect({ to: "/login" });
     }
   },
@@ -46,11 +46,7 @@ function ProfilePage() {
     <div className="min-h-screen bg-background">
       <AppHeader />
       <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <motion.div
-          initial={{ opacity: 0, y: 12 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
             Your <span className="text-gradient-sunset">profile</span>
           </h1>
@@ -84,11 +80,7 @@ function ProfilePage() {
 
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <InfoRow icon={UserIcon} label="Account ID" value={user.id} mono />
-              <InfoRow
-                icon={ShieldCheck}
-                label="Joined"
-                value={new Date(user.createdAt).toLocaleDateString()}
-              />
+              <InfoRow icon={ShieldCheck} label="Joined" value={new Date(user.createdAt).toLocaleDateString()} />
             </div>
           </div>
         </motion.div>
@@ -151,7 +143,6 @@ function ChangeEmailDialog({
   onOpenChange: (v: boolean) => void;
   onDone: () => void;
 }) {
-  const { user } = useAuth();
   const [newEmail, setNewEmail] = useState("");
   const [step, setStep] = useState<"input" | "otp">("input");
   const [otp, setOtp] = useState("");
@@ -165,36 +156,34 @@ function ChangeEmailDialog({
       toast.error("Enter a valid email");
       return;
     }
-    if (usersStore.byEmail(newEmail)) {
-      toast.error("Email already in use");
-      return;
-    }
     setSending(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const code = otpStore.generate(newEmail, "change-email", { userId: user!.id });
-    toast.success("OTP sent (demo)", { description: `Code: ${code}`, duration: 15000 });
-    setSending(false);
-    setStep("otp");
+    try {
+      await profileApi.changeEmailStart({ newEmail: newEmail.trim() });
+      toast.success("Verification code sent", { description: `Check ${newEmail}` });
+      setStep("otp");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send code");
+    } finally {
+      setSending(false);
+    }
   };
 
   const verify = async (e: React.FormEvent) => {
     e.preventDefault();
     setVerifying(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const v = otpStore.verify(newEmail, "change-email", otp);
-    if (!v.ok) {
+    try {
+      await profileApi.changeEmailVerify({ newEmail: newEmail.trim(), code: otp });
+      toast.success("Email updated");
+      onDone();
+      onOpenChange(false);
+      setStep("input");
+      setNewEmail("");
+      setOtp("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Verification failed");
+    } finally {
       setVerifying(false);
-      toast.error("Invalid or expired code");
-      return;
     }
-    usersStore.update(user!.id, { email: newEmail.trim(), emailVerified: true });
-    toast.success("Email updated");
-    setVerifying(false);
-    onDone();
-    onOpenChange(false);
-    setStep("input");
-    setNewEmail("");
-    setOtp("");
   };
 
   return (
@@ -258,7 +247,6 @@ const pwSchema = z
   .refine((d) => d.next === d.confirm, { message: "Passwords don't match", path: ["confirm"] });
 
 function ChangePasswordDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
-  const { user } = useAuth();
   const [data, setData] = useState({ current: "", next: "", confirm: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [updating, setUpdating] = useState(false);
@@ -272,18 +260,20 @@ function ChangePasswordDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       setErrors(map);
       return;
     }
-    if (user!.passwordHash !== hashPassword(data.current)) {
-      setErrors({ current: "Incorrect current password" });
-      return;
-    }
     setUpdating(true);
-    await new Promise((r) => setTimeout(r, 400));
-    usersStore.update(user!.id, { passwordHash: hashPassword(data.next) });
-    toast.success("Password updated");
-    setData({ current: "", next: "", confirm: "" });
-    setErrors({});
-    setUpdating(false);
-    onOpenChange(false);
+    try {
+      await profileApi.changePassword({ current: data.current, next: data.next });
+      toast.success("Password updated");
+      setData({ current: "", next: "", confirm: "" });
+      setErrors({});
+      onOpenChange(false);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Update failed";
+      if (/current/i.test(msg)) setErrors({ current: msg });
+      else toast.error(msg);
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
