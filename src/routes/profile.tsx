@@ -213,9 +213,9 @@ function ChangeEmailDialog({
               <Input id="newEmail" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required />
             </div>
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-                Send code
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
+              <Button type="submit" disabled={sending} className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+                {sending ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>) : "Send code"}
               </Button>
             </DialogFooter>
           </form>
@@ -237,9 +237,9 @@ function ChangeEmailDialog({
               </InputOTP>
             </div>
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setStep("input")}>Back</Button>
-              <Button type="submit" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-                Verify & update
+              <Button type="button" variant="ghost" onClick={() => setStep("input")} disabled={verifying}>Back</Button>
+              <Button type="submit" disabled={verifying} className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+                {verifying ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…</>) : "Verify & update"}
               </Button>
             </DialogFooter>
           </form>
