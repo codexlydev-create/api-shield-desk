@@ -1,26 +1,96 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { motion } from "framer-motion";
+import { ArrowRight, Bot, KeyRound, ShieldCheck, Zap } from "lucide-react";
+import { sessionStore } from "@/lib/storage";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/")({
-  component: Index,
+  beforeLoad: () => {
+    if (typeof window !== "undefined" && sessionStore.get()) {
+      throw redirect({ to: "/dashboard" });
+    }
+  },
+  component: Landing,
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
+function Landing() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="relative min-h-screen overflow-hidden bg-background">
+      <div className="pointer-events-none absolute inset-0 bg-gradient-mesh" />
+
+      <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6">
+        <div className="flex items-center gap-2">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-sunset shadow-glow">
+            <Bot className="h-5 w-5 text-primary-foreground" />
+          </div>
+          <span className="text-lg font-bold">
+            <span className="text-gradient-sunset">BOT</span> Validity
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link to="/login">
+            <Button variant="ghost" size="sm">Log in</Button>
+          </Link>
+          <Link to="/register">
+            <Button size="sm" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+              Get started
+            </Button>
+          </Link>
+        </div>
+      </header>
+
+      <main className="relative z-10 mx-auto max-w-7xl px-4 pb-24 pt-12 sm:px-6 sm:pt-20">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="mx-auto max-w-3xl text-center"
+        >
+          <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
+            Demo mode — data lives in your browser
+          </span>
+          <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
+            Manage your <span className="text-gradient-sunset">BOT validity</span> APIs in one place
+          </h1>
+          <p className="mx-auto mt-5 max-w-xl text-base text-muted-foreground sm:text-lg">
+            Generate unique IDs, set expiry dates, block or unblock instantly. Each BOT gets its own
+            HTTPS endpoint that returns live status.
+          </p>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link to="/register">
+              <Button size="lg" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+                Create free account <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button size="lg" variant="outline">I already have an account</Button>
+            </Link>
+          </div>
+        </motion.div>
+
+        <div className="mx-auto mt-20 grid max-w-5xl gap-4 sm:grid-cols-3">
+          {[
+            { icon: Zap, title: "Instant endpoints", text: "Each BOT gets a unique URL the moment it's created." },
+            { icon: ShieldCheck, title: "Full control", text: "Block, unblock, or delete BOTs anytime — state persists." },
+            { icon: KeyRound, title: "Secure access", text: "OTP verification on signup, email change, and reset." },
+          ].map((f, i) => (
+            <motion.div
+              key={f.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 + i * 0.1, duration: 0.5 }}
+              className="rounded-xl border border-border/60 bg-card/70 p-5 shadow-soft backdrop-blur"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-warm text-primary-foreground">
+                <f.icon className="h-5 w-5" />
+              </div>
+              <h3 className="mt-4 font-semibold">{f.title}</h3>
+              <p className="mt-1 text-sm text-muted-foreground">{f.text}</p>
+            </motion.div>
+          ))}
+        </div>
+      </main>
     </div>
   );
-}
-
-function Index() {
-  return <PlaceholderIndex />;
 }
