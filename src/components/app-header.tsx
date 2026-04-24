@@ -25,7 +25,7 @@ export function AppHeader() {
       className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-xl"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
-        <Link to="/dashboard" className="flex items-center gap-2 group">
+        <Link to="/" className="flex items-center gap-2 group">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-sunset shadow-glow transition-transform group-hover:scale-110">
             <Bot className="h-5 w-5 text-primary-foreground" />
           </div>
