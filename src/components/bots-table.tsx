@@ -66,11 +66,11 @@ function StatusBadge({ status }: { status: BotStatus }) {
   return <Badge className="border-0 bg-warning/20 text-warning-foreground hover:bg-warning/30">Blocked</Badge>;
 }
 
-function firstWords(text: string, n = 3): string {
+function truncateChars(text: string, n = 15): string {
   if (!text) return "—";
-  const words = text.trim().split(/\s+/);
-  if (words.length <= n) return words.join(" ");
-  return `${words.slice(0, n).join(" ")}…`;
+  const t = text.trim();
+  if (t.length <= n) return t;
+  return `${t.slice(0, n)}…`;
 }
 
 function getRemaining(expiryIso: string) {
@@ -345,9 +345,9 @@ export function BotsTable({
                           <td className="px-4 py-3 text-sm text-muted-foreground">
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="cursor-default">{firstWords(b.description, 3)}</span>
+                                <span className="cursor-default">{truncateChars(b.description, 15)}</span>
                               </TooltipTrigger>
-                              {b.description && b.description.trim().split(/\s+/).length > 3 && (
+                              {b.description && b.description.trim().length > 15 && (
                                 <TooltipContent className="max-w-xs">{b.description}</TooltipContent>
                               )}
                             </Tooltip>
