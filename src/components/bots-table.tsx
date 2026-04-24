@@ -162,9 +162,11 @@ export function BotsTable({
                 <thead>
                   <tr className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
                     <th className="px-4 py-3 font-medium">BOT Name</th>
+                    <th className="px-4 py-3 font-medium">Description</th>
                     <th className="px-4 py-3 font-medium">ID</th>
                     <th className="px-4 py-3 font-medium">API</th>
                     <th className="px-4 py-3 font-medium">Expiry</th>
+                    <th className="px-4 py-3 font-medium">Days Left</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Block</th>
                     <th className="px-4 py-3 text-right font-medium">Actions</th>
