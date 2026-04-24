@@ -196,21 +196,72 @@ export function BotsTable({
   return (
     <TooltipProvider delayDuration={150}>
       <div className="rounded-2xl border border-border/60 bg-card shadow-soft">
-        <div className="flex flex-col gap-3 border-b border-border/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Your BOTs</h2>
-            <p className="text-sm text-muted-foreground">
-              {filtered.length} of {bots.length} {bots.length === 1 ? "BOT" : "BOTs"}
-            </p>
+        <div className="flex flex-col gap-3 border-b border-border/60 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Your BOTs</h2>
+              <p className="text-sm text-muted-foreground">
+                {filtered.length} of {bots.length} {bots.length === 1 ? "BOT" : "BOTs"}
+              </p>
+            </div>
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => onSearch(e.target.value)}
+                placeholder="Search by ID or name…"
+                className="pl-9"
+              />
+            </div>
           </div>
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search by ID or name…"
-              className="pl-9"
-            />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Filter className="h-3.5 w-3.5" />
+              Filters:
+            </div>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="h-9 w-full sm:w-[160px]">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={remainingFilter}
+              onValueChange={(v) => setRemainingFilter(v as RemainingFilter)}
+            >
+              <SelectTrigger className="h-9 w-full sm:w-[200px]">
+                <SelectValue placeholder="All remaining time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any remaining time</SelectItem>
+                <SelectItem value="expired">Expired only</SelectItem>
+                <SelectItem value="today">Within 24 hours</SelectItem>
+                <SelectItem value="1d">≤ 1 day</SelectItem>
+                <SelectItem value="3d">≤ 3 days</SelectItem>
+                <SelectItem value="5d">≤ 5 days</SelectItem>
+                <SelectItem value="7d">≤ 7 days</SelectItem>
+                <SelectItem value="30d">≤ 30 days</SelectItem>
+                <SelectItem value="30d+">More than 30 days</SelectItem>
+              </SelectContent>
+            </Select>
+            {(statusFilter !== "all" || remainingFilter !== "all") && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setRemainingFilter("all");
+                }}
+                className="h-9"
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </div>
 
