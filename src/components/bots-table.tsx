@@ -188,7 +188,16 @@ export function BotsTable({
                         >
                           <td className="px-4 py-3">
                             <div className="font-medium">{b.name}</div>
-                            <div className="line-clamp-1 text-xs text-muted-foreground">{b.description || "—"}</div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="cursor-default">{firstWords(b.description, 3)}</span>
+                              </TooltipTrigger>
+                              {b.description && b.description.trim().split(/\s+/).length > 3 && (
+                                <TooltipContent className="max-w-xs">{b.description}</TooltipContent>
+                              )}
+                            </Tooltip>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
@@ -218,6 +227,9 @@ export function BotsTable({
                             </div>
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">{formatDateTime(b.expiryDate)}</td>
+                          <td className="px-4 py-3 text-sm font-medium">
+                            <DaysRemaining expiryIso={b.expiryDate} />
+                          </td>
                           <td className="px-4 py-3">
                             <StatusBadge status={status} />
                           </td>
