@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/api/bot/$id")({
-  component: BotApiView;
+  component: BotApiView,
 });
 
 function BotApiView() {
