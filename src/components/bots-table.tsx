@@ -282,7 +282,7 @@ export function BotsTable({
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="truncate font-semibold">{b.name}</div>
-                          <p className="line-clamp-2 text-xs text-muted-foreground">{b.description || "—"}</p>
+                          <p className="text-xs text-muted-foreground">{firstWords(b.description, 3)}</p>
                         </div>
                         <StatusBadge status={status} />
                       </div>
@@ -307,6 +307,10 @@ export function BotsTable({
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-muted-foreground">Expiry</span>
                           <span>{formatDateTime(b.expiryDate)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground">Days Left</span>
+                          <DaysRemaining expiryIso={b.expiryDate} />
                         </div>
                       </div>
 
