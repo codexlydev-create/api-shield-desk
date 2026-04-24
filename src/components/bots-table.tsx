@@ -260,13 +260,34 @@ export function BotsTable({
                 <SelectItem value="30d+">More than 30 days</SelectItem>
               </SelectContent>
             </Select>
-            {(statusFilter !== "all" || remainingFilter !== "all") && (
+            <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as SortOrder)}>
+              <SelectTrigger className="h-9 w-full sm:w-[220px]">
+                <SelectValue placeholder="Sort: default order" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sort: default order</SelectItem>
+                <SelectItem value="remaining-desc">
+                  <span className="inline-flex items-center gap-2">
+                    <ArrowDownWideNarrow className="h-3.5 w-3.5" />
+                    High → Low remaining
+                  </span>
+                </SelectItem>
+                <SelectItem value="remaining-asc">
+                  <span className="inline-flex items-center gap-2">
+                    <ArrowUpNarrowWide className="h-3.5 w-3.5" />
+                    Low → High remaining
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {(statusFilter !== "all" || remainingFilter !== "all" || sortOrder !== "none") && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => {
                   setStatusFilter("all");
                   setRemainingFilter("all");
+                  setSortOrder("none");
                 }}
                 className="h-9"
               >
