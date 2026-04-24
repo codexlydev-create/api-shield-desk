@@ -14,7 +14,7 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { hashPassword, otpStore, usersStore } from "@/lib/storage";
+import { authApi } from "@/lib/api";
 
 export const Route = createFileRoute("/forgot-password")({
   component: ForgotPage,
@@ -39,17 +39,16 @@ function ForgotPage() {
 
   const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    const u = usersStore.byEmail(email);
-    if (!u) {
-      toast.error("No account with that email.");
-      return;
-    }
     setSending(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const code = otpStore.generate(email, "reset");
-    toast.success("Reset code sent (demo mode)", { description: `Your code: ${code}`, duration: 15000 });
-    setSending(false);
-    setStep("reset");
+    try {
+      await authApi.forgotStart({ email: email.trim() });
+      toast.success("Reset code sent", { description: `Check ${email}` });
+      setStep("reset");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send code");
+    } finally {
+      setSending(false);
+    }
   };
 
   const reset = async (e: React.FormEvent) => {
@@ -62,17 +61,15 @@ function ForgotPage() {
       return;
     }
     setResetting(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const v = otpStore.verify(email, "reset", otp);
-    if (!v.ok) {
+    try {
+      await authApi.forgotVerify({ email: email.trim(), code: otp, password: pw.password });
+      toast.success("Password updated. Please log in.");
+      navigate({ to: "/login" });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Reset failed");
+    } finally {
       setResetting(false);
-      toast.error("Invalid or expired code");
-      return;
     }
-    const u = usersStore.byEmail(email)!;
-    usersStore.update(u.id, { passwordHash: hashPassword(pw.password) });
-    toast.success("Password updated. Please log in.");
-    navigate({ to: "/login" });
   };
 
   return (

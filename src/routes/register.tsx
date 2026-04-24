@@ -15,7 +15,7 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { hashPassword, otpStore, usersStore } from "@/lib/storage";
+import { authApi } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 
 export const Route = createFileRoute("/register")({
@@ -33,14 +33,14 @@ const schema = z
 
 function RegisterPage() {
   const navigate = useNavigate();
-  const { refresh } = useAuth();
+  const { loginWithToken } = useAuth();
   const [step, setStep] = useState<"form" | "otp">("form");
   const [data, setData] = useState({ name: "", email: "", password: "", confirm: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [otp, setOtp] = useState("");
   const [submitting, setSubmitting] = useState(false);
-
   const [sendingOtp, setSendingOtp] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,19 +52,20 @@ function RegisterPage() {
       return;
     }
     setErrors({});
-    if (usersStore.byEmail(data.email)) {
-      toast.error("An account with this email already exists.");
-      return;
-    }
     setSendingOtp(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const code = otpStore.generate(data.email, "register");
-    toast.success("OTP sent (demo mode)", {
-      description: `Your code: ${code}`,
-      duration: 15000,
-    });
-    setSendingOtp(false);
-    setStep("otp");
+    try {
+      await authApi.registerStart({
+        name: data.name.trim(),
+        email: data.email.trim(),
+        password: data.password,
+      });
+      toast.success("Verification code sent", { description: `Check ${data.email}` });
+      setStep("otp");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to send code");
+    } finally {
+      setSendingOtp(false);
+    }
   };
 
   const handleVerify = async (e: React.FormEvent) => {
@@ -74,25 +75,32 @@ function RegisterPage() {
       return;
     }
     setSubmitting(true);
-    await new Promise((r) => setTimeout(r, 400));
-    const res = otpStore.verify(data.email, "register", otp);
-    if (!res.ok) {
-      toast.error("Invalid or expired code");
+    try {
+      const res = await authApi.registerVerify({ email: data.email.trim(), code: otp });
+      loginWithToken(res.token, res.user);
+      toast.success("Account created — welcome!");
+      navigate({ to: "/dashboard" });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Verification failed");
+    } finally {
       setSubmitting(false);
-      return;
     }
-    const id = `u_${Date.now().toString(36)}`;
-    usersStore.create({
-      id,
-      name: data.name,
-      email: data.email,
-      passwordHash: hashPassword(data.password),
-      emailVerified: true,
-      createdAt: new Date().toISOString(),
-    });
-    toast.success("Account created — welcome!");
-    refresh();
-    navigate({ to: "/login" });
+  };
+
+  const resend = async () => {
+    setResending(true);
+    try {
+      await authApi.registerStart({
+        name: data.name.trim(),
+        email: data.email.trim(),
+        password: data.password,
+      });
+      toast.success("New code sent", { description: `Check ${data.email}` });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to send code");
+    } finally {
+      setResending(false);
+    }
   };
 
   return (
@@ -158,13 +166,11 @@ function RegisterPage() {
           </Button>
           <button
             type="button"
-            onClick={() => {
-              const code = otpStore.generate(data.email, "register");
-              toast.success("New code sent", { description: `Your code: ${code}`, duration: 15000 });
-            }}
-            className="block w-full text-center text-sm text-muted-foreground hover:text-foreground"
+            onClick={resend}
+            disabled={resending}
+            className="block w-full text-center text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
           >
-            Resend code
+            {resending ? "Sending…" : "Resend code"}
           </button>
         </motion.form>
       )}
