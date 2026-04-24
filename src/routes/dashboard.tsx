@@ -6,6 +6,7 @@ import { sessionStore, botsStore, getBotStatus, type Bot } from "@/lib/storage";
 import { useAuth } from "@/lib/auth-context";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { BotFormDialog } from "@/components/bot-form-dialog";
 import { BotsTable } from "@/components/bots-table";
 
@@ -26,6 +27,7 @@ function DashboardPage() {
   const [search, setSearch] = useState("");
   const [bots, setBots] = useState<Bot[]>([]);
   const [_tick, setTick] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) {
@@ -34,6 +36,8 @@ function DashboardPage() {
     }
     const refresh = () => setBots(botsStore.byOwner(user.id));
     refresh();
+    // Brief skeleton on first mount
+    const loadTimer = setTimeout(() => setLoading(false), 500);
     const handler = () => refresh();
     window.addEventListener("bvm:change", handler);
     window.addEventListener("storage", handler);
@@ -42,6 +46,7 @@ function DashboardPage() {
       window.removeEventListener("bvm:change", handler);
       window.removeEventListener("storage", handler);
       clearInterval(interval);
+      clearTimeout(loadTimer);
     };
   }, [user, navigate]);
 
