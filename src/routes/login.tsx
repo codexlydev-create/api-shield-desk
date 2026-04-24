@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/lib/auth-context";
 
@@ -45,7 +46,7 @@ function LoginPage() {
               Forgot password?
             </Link>
           </div>
-          <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+          <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
         <Button type="submit" disabled={submitting} className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
           {submitting ? "Logging in…" : "Log in"}

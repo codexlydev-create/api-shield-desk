@@ -5,6 +5,7 @@ import { z } from "zod";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   InputOTP,
@@ -102,12 +103,12 @@ function ForgotPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">New password</Label>
-            <Input id="password" type="password" value={pw.password} onChange={(e) => setPw({ ...pw, password: e.target.value })} />
+            <PasswordInput id="password" value={pw.password} onChange={(e) => setPw({ ...pw, password: e.target.value })} />
             {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm">Confirm password</Label>
-            <Input id="confirm" type="password" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
+            <PasswordInput id="confirm" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
             {errors.confirm && <p className="text-xs text-destructive">{errors.confirm}</p>}
           </div>
           <Button type="submit" className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">

@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth-context";
 import { AppHeader } from "@/components/app-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -282,17 +283,17 @@ function ChangePasswordDialog({ open, onOpenChange }: { open: boolean; onOpenCha
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="current">Current password</Label>
-            <Input id="current" type="password" value={data.current} onChange={(e) => setData({ ...data, current: e.target.value })} />
+            <PasswordInput id="current" value={data.current} onChange={(e) => setData({ ...data, current: e.target.value })} />
             {errors.current && <p className="text-xs text-destructive">{errors.current}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="next">New password</Label>
-            <Input id="next" type="password" value={data.next} onChange={(e) => setData({ ...data, next: e.target.value })} />
+            <PasswordInput id="next" value={data.next} onChange={(e) => setData({ ...data, next: e.target.value })} />
             {errors.next && <p className="text-xs text-destructive">{errors.next}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm">Confirm new password</Label>
-            <Input id="confirm" type="password" value={data.confirm} onChange={(e) => setData({ ...data, confirm: e.target.value })} />
+            <PasswordInput id="confirm" value={data.confirm} onChange={(e) => setData({ ...data, confirm: e.target.value })} />
             {errors.confirm && <p className="text-xs text-destructive">{errors.confirm}</p>}
           </div>
           <DialogFooter>
