@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { BadgeCheck, KeyRound, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
+import { BadgeCheck, KeyRound, Loader2, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { hashPassword, otpStore, sessionStore, usersStore } from "@/lib/storage";
@@ -155,8 +155,10 @@ function ChangeEmailDialog({
   const [newEmail, setNewEmail] = useState("");
   const [step, setStep] = useState<"input" | "otp">("input");
   const [otp, setOtp] = useState("");
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
-  const sendOtp = (e: React.FormEvent) => {
+  const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = z.string().email().safeParse(newEmail.trim());
     if (!parsed.success) {
@@ -167,20 +169,27 @@ function ChangeEmailDialog({
       toast.error("Email already in use");
       return;
     }
+    setSending(true);
+    await new Promise((r) => setTimeout(r, 400));
     const code = otpStore.generate(newEmail, "change-email", { userId: user!.id });
     toast.success("OTP sent (demo)", { description: `Code: ${code}`, duration: 15000 });
+    setSending(false);
     setStep("otp");
   };
 
-  const verify = (e: React.FormEvent) => {
+  const verify = async (e: React.FormEvent) => {
     e.preventDefault();
+    setVerifying(true);
+    await new Promise((r) => setTimeout(r, 400));
     const v = otpStore.verify(newEmail, "change-email", otp);
     if (!v.ok) {
+      setVerifying(false);
       toast.error("Invalid or expired code");
       return;
     }
     usersStore.update(user!.id, { email: newEmail.trim(), emailVerified: true });
     toast.success("Email updated");
+    setVerifying(false);
     onDone();
     onOpenChange(false);
     setStep("input");
