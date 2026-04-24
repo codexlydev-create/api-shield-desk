@@ -130,6 +130,8 @@ export function BotsTable({
   const [bots, setBots] = useState<Bot[]>([]);
   const [_tick, setTick] = useState(0);
   const [toDelete, setToDelete] = useState<Bot | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [remainingFilter, setRemainingFilter] = useState<RemainingFilter>("all");
 
   useEffect(() => {
     const refresh = () => setBots(botsStore.byOwner(ownerId));
@@ -137,8 +139,8 @@ export function BotsTable({
     const handler = () => refresh();
     window.addEventListener("bvm:change", handler);
     window.addEventListener("storage", handler);
-    // tick every 30s so expired status updates live
-    const interval = setInterval(() => setTick((t) => t + 1), 30000);
+    // tick every second so countdown stays live
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
     return () => {
       window.removeEventListener("bvm:change", handler);
       window.removeEventListener("storage", handler);
@@ -148,9 +150,45 @@ export function BotsTable({
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return bots;
-    return bots.filter((b) => b.id.toLowerCase().includes(q) || b.name.toLowerCase().includes(q));
-  }, [bots, search]);
+    const DAY = 86_400_000;
+    return bots.filter((b) => {
+      if (q && !(b.id.toLowerCase().includes(q) || b.name.toLowerCase().includes(q))) return false;
+
+      const status = getBotStatus(b);
+      if (statusFilter !== "all" && status !== statusFilter) return false;
+
+      if (remainingFilter !== "all") {
+        const ms = new Date(b.expiryDate).getTime() - Date.now();
+        switch (remainingFilter) {
+          case "expired":
+            if (ms > 0) return false;
+            break;
+          case "today":
+            if (ms <= 0 || ms > DAY) return false;
+            break;
+          case "1d":
+            if (ms <= 0 || ms > DAY) return false;
+            break;
+          case "3d":
+            if (ms <= 0 || ms > 3 * DAY) return false;
+            break;
+          case "5d":
+            if (ms <= 0 || ms > 5 * DAY) return false;
+            break;
+          case "7d":
+            if (ms <= 0 || ms > 7 * DAY) return false;
+            break;
+          case "30d":
+            if (ms <= 0 || ms > 30 * DAY) return false;
+            break;
+          case "30d+":
+            if (ms <= 30 * DAY) return false;
+            break;
+        }
+      }
+      return true;
+    });
+  }, [bots, search, statusFilter, remainingFilter]);
 
   const apiUrl = (b: Bot) =>
     typeof window !== "undefined" ? `${window.location.origin}/api/bot/${b.id}` : `/api/bot/${b.id}`;
