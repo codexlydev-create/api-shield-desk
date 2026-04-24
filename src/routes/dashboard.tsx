@@ -91,8 +91,8 @@ function DashboardPage() {
           </Button>
         </motion.div>
 
-        {loading ? (
-          <>
+        {loading && (
+          <div>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-[88px] rounded-xl" />
@@ -105,9 +105,10 @@ function DashboardPage() {
                 <Skeleton key={i} className="h-12 w-full" />
               ))}
             </div>
-          </>
-        ) : (
-          <>
+          </div>
+        )}
+        {!loading && (
+          <div>
             <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
                 { label: "Total", value: stats.total, icon: BotIcon, gradient: "bg-gradient-sunset" },
@@ -144,7 +145,7 @@ function DashboardPage() {
                 }}
               />
             </div>
-          </>
+          </div>
         )}
       </main>
 
