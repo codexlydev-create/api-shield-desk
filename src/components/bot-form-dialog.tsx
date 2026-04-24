@@ -76,7 +76,6 @@ export function BotFormDialog({
       return;
     }
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 350));
     // Combine date + time into a single Date
     const [h, m] = parsed.data.expiryTime.split(":").map(Number);
     const combined = new Date(parsed.data.expiryDate);
