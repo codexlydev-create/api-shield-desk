@@ -174,7 +174,9 @@ function BotApiView() {
             </Button>
           </div>
           <pre className="overflow-x-auto bg-background p-5 font-mono text-sm leading-relaxed">
-            <code>{json}</code>
+            <code>
+              <HighlightedJson json={json} liveKeys={["remaining_time", "remaining", "days", "hours", "minutes", "seconds", "status"]} />
+            </code>
           </pre>
         </div>
 
