@@ -201,8 +201,11 @@ export function BotsTable({
     return list;
   }, [bots, search, statusFilter, remainingFilter, sortOrder]);
 
-  const apiUrl = (b: Bot) =>
-    typeof window !== "undefined" ? `${window.location.origin}/api/bot/${b.id}` : `/api/bot/${b.id}`;
+  const API_BASE =
+    (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
+    (typeof window !== "undefined" ? window.location.origin : "");
+  // Public, unauthenticated endpoint — accessible from anywhere.
+  const apiUrl = (b: Bot) => `${API_BASE}/api/public/applications/${b.id}`;
 
   return (
     <TooltipProvider delayDuration={150}>

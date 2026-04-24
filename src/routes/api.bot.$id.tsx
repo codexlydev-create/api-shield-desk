@@ -1,73 +1,67 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, Copy } from "lucide-react";
+import { Check, Copy, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { botsStore, formatDateTime, getBotStatus, type Bot } from "@/lib/storage";
+import { publicApi, type PublicApplicationResponse } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export const Route = createFileRoute("/api/bot/$id")({
   component: BotApiView,
 });
 
-function computeRemaining(expiryIso: string) {
-  let ms = new Date(expiryIso).getTime() - Date.now();
-  const expired = ms <= 0;
-  ms = Math.abs(ms);
-  const days = Math.floor(ms / 86_400_000);
-  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
-  const minutes = Math.floor((ms % 3_600_000) / 60_000);
-  const seconds = Math.floor((ms % 60_000) / 1000);
-  return { expired, days, hours, minutes, seconds };
-}
-
 function BotApiView() {
   const { id } = Route.useParams();
-  const [bot, setBot] = useState<Bot | undefined | null>(undefined);
-  const [, setNow] = useState(0);
+  const [payload, setPayload] = useState<PublicApplicationResponse | null>(null);
+  const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const refresh = () => setBot(botsStore.byId(id) ?? null);
-    refresh();
-    const handler = () => refresh();
-    window.addEventListener("bvm:change", handler);
-    window.addEventListener("storage", handler);
-    // Tick every second so "Remaining time" stays live
-    const t = setInterval(() => {
-      refresh();
-      setNow((n) => n + 1);
-    }, 1000);
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await publicApi.getApplication(id);
+        if (alive) setPayload(res);
+      } catch (err) {
+        if (alive) {
+          const status = (err as { status?: number })?.status;
+          const message = (err as Error)?.message || "Not found";
+          setPayload({
+            id,
+            expiry_date: "",
+            status: "expired",
+            remaining_time: "",
+            remaining: { days: 0, hours: 0, minutes: 0, seconds: 0 },
+            error: status === 404 ? "Not found" : message,
+          });
+        }
+      } finally {
+        if (alive) setLoading(false);
+      }
+    };
+    void load();
+    const t = setInterval(load, 1000);
     return () => {
-      window.removeEventListener("bvm:change", handler);
-      window.removeEventListener("storage", handler);
+      alive = false;
       clearInterval(t);
     };
   }, [id]);
 
-  if (bot === undefined) return null;
+  const notFound = !!payload?.error;
 
-  const payload =
-    bot === null
-      ? { error: "Not found", id }
-      : (() => {
-          const r = computeRemaining(bot.expiryDate);
-          return {
-            id: bot.id,
-            expiry_date: formatDateTime(bot.expiryDate),
-            status: getBotStatus(bot),
-            remaining_time: r.expired
-              ? `Expired ${r.days}d ${r.hours}h ${r.minutes}m ${r.seconds}s ago`
-              : `${r.days}d ${r.hours}h ${r.minutes}m ${r.seconds}s`,
-            remaining: {
-              days: r.expired ? -r.days : r.days,
-              hours: r.expired ? -r.hours : r.hours,
-              minutes: r.expired ? -r.minutes : r.minutes,
-              seconds: r.expired ? -r.seconds : r.seconds,
-            },
-          };
-        })();
+  const displayPayload = payload
+    ? notFound
+      ? { error: payload.error, id: payload.id }
+      : {
+          id: payload.id,
+          expiry_date: payload.expiry_date,
+          status: payload.status,
+          remaining_time: payload.remaining_time,
+          remaining: payload.remaining,
+        }
+    : null;
 
-  const json = JSON.stringify(payload, null, 2);
+  const json = displayPayload ? JSON.stringify(displayPayload, null, 2) : "";
 
   const copy = async () => {
     try {
@@ -88,19 +82,21 @@ function BotApiView() {
           <Link to="/dashboard" className="text-sm font-medium text-muted-foreground hover:text-foreground">
             ← Back to dashboard
           </Link>
-          <span
-            className={`rounded-full px-3 py-1 text-xs font-semibold ${
-              bot === null
-                ? "bg-destructive/15 text-destructive"
-                : getBotStatus(bot) === "active"
-                  ? "bg-success/15 text-success"
-                  : getBotStatus(bot) === "expired"
-                    ? "bg-destructive/15 text-destructive"
-                    : "bg-warning/20 text-warning-foreground"
-            }`}
-          >
-            {bot === null ? "404" : getBotStatus(bot).toUpperCase()}
-          </span>
+          {payload && (
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                notFound
+                  ? "bg-destructive/15 text-destructive"
+                  : payload.status === "active"
+                    ? "bg-success/15 text-success"
+                    : payload.status === "expired"
+                      ? "bg-destructive/15 text-destructive"
+                      : "bg-warning/20 text-warning-foreground"
+              }`}
+            >
+              {notFound ? "404" : payload.status.toUpperCase()}
+            </span>
+          )}
         </div>
 
         <div className="mt-6">
@@ -108,36 +104,44 @@ function BotApiView() {
             <span className="text-gradient-sunset">APPLICATION</span> validity endpoint
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">GET /api/bot/{id}</code>
+            <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">GET /api/public/applications/{id}</code>
           </p>
         </div>
 
-        {bot && (
+        {loading && (
+          <div className="mt-6 space-y-4">
+            <Skeleton className="h-40 w-full rounded-2xl" />
+            <Skeleton className="h-64 w-full rounded-2xl" />
+          </div>
+        )}
+
+        {!loading && payload && !notFound && (
           <div className="mt-6 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 shadow-soft">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Remaining time</p>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Expires <span className="font-medium text-foreground">{formatDateTime(bot.expiryDate)}</span>
+                  Expires <span className="font-medium text-foreground">{payload.expiry_date}</span>
                 </p>
               </div>
             </div>
             <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-3">
               {(() => {
-                const r = computeRemaining(bot.expiryDate);
+                const expired = payload.status === "expired";
+                const r = payload.remaining;
                 const cells = [
-                  { label: "Days", value: r.days },
-                  { label: "Hours", value: r.hours },
-                  { label: "Minutes", value: r.minutes },
-                  { label: "Seconds", value: r.seconds },
+                  { label: "Days", value: Math.abs(r.days) },
+                  { label: "Hours", value: Math.abs(r.hours) },
+                  { label: "Minutes", value: Math.abs(r.minutes) },
+                  { label: "Seconds", value: Math.abs(r.seconds) },
                 ];
                 return cells.map((c) => (
                   <div
                     key={c.label}
-                    className={`rounded-xl border border-border/60 ${r.expired ? "bg-destructive/5" : "bg-gradient-sunset/5"} p-3 text-center`}
+                    className={`rounded-xl border border-border/60 ${expired ? "bg-destructive/5" : "bg-gradient-sunset/5"} p-3 text-center`}
                   >
                     <div
-                      className={`font-mono text-2xl font-bold tabular-nums sm:text-3xl ${r.expired ? "text-destructive" : "text-gradient-sunset"}`}
+                      className={`font-mono text-2xl font-bold tabular-nums sm:text-3xl ${expired ? "text-destructive" : "text-gradient-sunset"}`}
                     >
                       {String(c.value).padStart(2, "0")}
                     </div>
@@ -148,42 +152,42 @@ function BotApiView() {
                 ));
               })()}
             </div>
-            {(() => {
-              const r = computeRemaining(bot.expiryDate);
-              return (
-                <p className={`mt-3 text-center text-sm font-medium ${r.expired ? "text-destructive" : "text-foreground"}`}>
-                  {r.expired ? "Expired " : ""}
-                  {r.days}d {r.hours}h {r.minutes}m {r.seconds}s {r.expired ? "ago" : "remaining"}
-                </p>
-              );
-            })()}
+            <p className="mt-3 text-center text-sm font-medium">
+              {payload.remaining_time}
+            </p>
           </div>
         )}
 
-        <div className="mt-6 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-elegant">
-          <div className="flex items-center justify-between border-b border-border/60 px-4 py-2">
-            <div className="flex items-center gap-1">
-              <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
-              <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
-              <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
-              <span className="ml-3 text-xs font-medium text-muted-foreground">application/json</span>
+        {!loading && displayPayload && (
+          <div className="mt-6 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-elegant">
+            <div className="flex items-center justify-between border-b border-border/60 px-4 py-2">
+              <div className="flex items-center gap-1">
+                <span className="h-2.5 w-2.5 rounded-full bg-destructive/60" />
+                <span className="h-2.5 w-2.5 rounded-full bg-warning/70" />
+                <span className="h-2.5 w-2.5 rounded-full bg-success/70" />
+                <span className="ml-3 text-xs font-medium text-muted-foreground">application/json</span>
+              </div>
+              <Button size="sm" variant="ghost" onClick={copy}>
+                {copied ? <Check className="mr-1 h-4 w-4 text-success" /> : <Copy className="mr-1 h-4 w-4" />}
+                Copy
+              </Button>
             </div>
-            <Button size="sm" variant="ghost" onClick={copy}>
-              {copied ? <Check className="mr-1 h-4 w-4 text-success" /> : <Copy className="mr-1 h-4 w-4" />}
-              Copy
-            </Button>
+            <pre className="overflow-x-auto bg-background p-5 font-mono text-sm leading-relaxed">
+              <code>
+                <HighlightedJson json={json} liveKeys={["remaining_time", "remaining", "days", "hours", "minutes", "seconds", "status"]} />
+              </code>
+            </pre>
           </div>
-          <pre className="overflow-x-auto bg-background p-5 font-mono text-sm leading-relaxed">
-            <code>
-              <HighlightedJson json={json} liveKeys={["remaining_time", "remaining", "days", "hours", "minutes", "seconds", "status"]} />
-            </code>
-          </pre>
-        </div>
+        )}
 
-        {bot && (
+        {!loading && !notFound && (
           <p className="mt-4 text-xs text-muted-foreground">
-            Status updates live based on expiry date and block toggle. This is a demo endpoint backed by your browser's
-            local storage.
+            Public endpoint — live response from the backend. Updates every second.
+            {payload && payload.status === "active" && (
+              <span className="ml-1 inline-flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> syncing
+              </span>
+            )}
           </p>
         )}
       </div>
@@ -192,11 +196,8 @@ function BotApiView() {
 }
 
 function HighlightedJson({ json, liveKeys }: { json: string; liveKeys: string[] }) {
-  // Tokenize the JSON line by line and colorize keys, strings, numbers, booleans.
   const liveSet = new Set(liveKeys);
   const lines = json.split("\n");
-
-  // Track the current key on each value line so we can highlight live values.
   return (
     <>
       {lines.map((line, i) => {
@@ -213,7 +214,6 @@ function HighlightedJson({ json, liveKeys }: { json: string; liveKeys: string[] 
             </div>
           );
         }
-        // structural lines: { } , [ ]
         return (
           <div key={i} className="text-muted-foreground">
             {line}
@@ -225,11 +225,9 @@ function HighlightedJson({ json, liveKeys }: { json: string; liveKeys: string[] 
 }
 
 function renderValue(raw: string, isLive: boolean) {
-  // Strip trailing comma for matching, then re-append.
   const trailingComma = raw.endsWith(",");
   const value = trailingComma ? raw.slice(0, -1) : raw;
   const comma = trailingComma ? <span className="text-muted-foreground">,</span> : null;
-
   const liveClass = isLive ? "rounded bg-gradient-sunset/15 px-1 font-semibold text-gradient-sunset" : "";
 
   if (value.startsWith('"') && value.endsWith('"')) {
@@ -256,7 +254,6 @@ function renderValue(raw: string, isLive: boolean) {
       </>
     );
   }
-  // Opening brace of nested object
   return (
     <>
       <span className="text-muted-foreground">{value}</span>
