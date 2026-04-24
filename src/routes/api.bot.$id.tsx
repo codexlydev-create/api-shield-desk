@@ -9,9 +9,21 @@ export const Route = createFileRoute("/api/bot/$id")({
   component: BotApiView,
 });
 
+function computeRemaining(expiryIso: string) {
+  let ms = new Date(expiryIso).getTime() - Date.now();
+  const expired = ms <= 0;
+  ms = Math.abs(ms);
+  const days = Math.floor(ms / 86_400_000);
+  const hours = Math.floor((ms % 86_400_000) / 3_600_000);
+  const minutes = Math.floor((ms % 3_600_000) / 60_000);
+  const seconds = Math.floor((ms % 60_000) / 1000);
+  return { expired, days, hours, minutes, seconds };
+}
+
 function BotApiView() {
   const { id } = Route.useParams();
   const [bot, setBot] = useState<Bot | undefined | null>(undefined);
+  const [, setNow] = useState(0);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -20,7 +32,11 @@ function BotApiView() {
     const handler = () => refresh();
     window.addEventListener("bvm:change", handler);
     window.addEventListener("storage", handler);
-    const t = setInterval(refresh, 30000);
+    // Tick every second so "Remaining time" stays live
+    const t = setInterval(() => {
+      refresh();
+      setNow((n) => n + 1);
+    }, 1000);
     return () => {
       window.removeEventListener("bvm:change", handler);
       window.removeEventListener("storage", handler);
@@ -33,11 +49,23 @@ function BotApiView() {
   const payload =
     bot === null
       ? { error: "Not found", id }
-      : {
-          id: bot.id,
-          expiry_date: formatDateTime(bot.expiryDate),
-          status: getBotStatus(bot),
-        };
+      : (() => {
+          const r = computeRemaining(bot.expiryDate);
+          return {
+            id: bot.id,
+            expiry_date: formatDateTime(bot.expiryDate),
+            status: getBotStatus(bot),
+            remaining_time: r.expired
+              ? `Expired ${r.days}d ${r.hours}h ${r.minutes}m ${r.seconds}s ago`
+              : `${r.days}d ${r.hours}h ${r.minutes}m ${r.seconds}s`,
+            remaining: {
+              days: r.expired ? -r.days : r.days,
+              hours: r.expired ? -r.hours : r.hours,
+              minutes: r.expired ? -r.minutes : r.minutes,
+              seconds: r.expired ? -r.seconds : r.seconds,
+            },
+          };
+        })();
 
   const json = JSON.stringify(payload, null, 2);
 
