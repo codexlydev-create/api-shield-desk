@@ -287,7 +287,7 @@ export function BotsTable({
                     <th className="px-4 py-3 font-medium">ID</th>
                     <th className="px-4 py-3 font-medium">API</th>
                     <th className="px-4 py-3 font-medium">Expiry</th>
-                    <th className="px-4 py-3 font-medium">Days Left</th>
+                    <th className="px-4 py-3 font-medium">Remaining</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Block</th>
                     <th className="px-4 py-3 text-right font-medium">Actions</th>
@@ -349,7 +349,7 @@ export function BotsTable({
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">{formatDateTime(b.expiryDate)}</td>
                           <td className="px-4 py-3 text-sm font-medium">
-                            <DaysRemaining expiryIso={b.expiryDate} />
+                            <Countdown expiryIso={b.expiryDate} />
                           </td>
                           <td className="px-4 py-3">
                             <StatusBadge status={status} />
@@ -430,8 +430,8 @@ export function BotsTable({
                           <span>{formatDateTime(b.expiryDate)}</span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-muted-foreground">Days Left</span>
-                          <DaysRemaining expiryIso={b.expiryDate} />
+                          <span className="text-muted-foreground">Remaining</span>
+                          <Countdown expiryIso={b.expiryDate} />
                         </div>
                       </div>
 
