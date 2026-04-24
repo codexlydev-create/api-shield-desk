@@ -112,6 +112,54 @@ function BotApiView() {
           </p>
         </div>
 
+        {bot && (
+          <div className="mt-6 overflow-hidden rounded-2xl border border-border/60 bg-card p-5 shadow-soft">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Remaining time</p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Expires <span className="font-medium text-foreground">{formatDateTime(bot.expiryDate)}</span>
+                </p>
+              </div>
+            </div>
+            <div className="mt-4 grid grid-cols-4 gap-2 sm:gap-3">
+              {(() => {
+                const r = computeRemaining(bot.expiryDate);
+                const cells = [
+                  { label: "Days", value: r.days },
+                  { label: "Hours", value: r.hours },
+                  { label: "Minutes", value: r.minutes },
+                  { label: "Seconds", value: r.seconds },
+                ];
+                return cells.map((c) => (
+                  <div
+                    key={c.label}
+                    className={`rounded-xl border border-border/60 ${r.expired ? "bg-destructive/5" : "bg-gradient-sunset/5"} p-3 text-center`}
+                  >
+                    <div
+                      className={`font-mono text-2xl font-bold tabular-nums sm:text-3xl ${r.expired ? "text-destructive" : "text-gradient-sunset"}`}
+                    >
+                      {String(c.value).padStart(2, "0")}
+                    </div>
+                    <div className="mt-1 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                      {c.label}
+                    </div>
+                  </div>
+                ));
+              })()}
+            </div>
+            {(() => {
+              const r = computeRemaining(bot.expiryDate);
+              return (
+                <p className={`mt-3 text-center text-sm font-medium ${r.expired ? "text-destructive" : "text-foreground"}`}>
+                  {r.expired ? "Expired " : ""}
+                  {r.days}d {r.hours}h {r.minutes}m {r.seconds}s {r.expired ? "ago" : "remaining"}
+                </p>
+              );
+            })()}
+          </div>
+        )}
+
         <div className="mt-6 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-elegant">
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-2">
             <div className="flex items-center gap-1">

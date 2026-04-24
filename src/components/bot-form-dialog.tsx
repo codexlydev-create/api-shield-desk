@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Clock } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -25,6 +25,10 @@ const schema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(60),
   description: z.string().trim().max(300).optional().default(""),
   expiryDate: z.date({ required_error: "Pick an expiry date" }),
+  expiryTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM (24h)")
+    .default("23:59"),
 });
 
 export function BotFormDialog({
@@ -42,31 +46,44 @@ export function BotFormDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState<Date | undefined>();
+  const [time, setTime] = useState("23:59");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (open) {
       setName(bot?.name ?? "");
       setDescription(bot?.description ?? "");
-      setDate(bot?.expiryDate ? new Date(bot.expiryDate) : undefined);
+      if (bot?.expiryDate) {
+        const d = new Date(bot.expiryDate);
+        setDate(d);
+        setTime(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+      } else {
+        setDate(undefined);
+        setTime("23:59");
+      }
       setErrors({});
     }
   }, [open, bot]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = schema.safeParse({ name, description, expiryDate: date });
+    const parsed = schema.safeParse({ name, description, expiryDate: date, expiryTime: time });
     if (!parsed.success) {
       const map: Record<string, string> = {};
       parsed.error.issues.forEach((i) => (map[i.path[0] as string] = i.message));
       setErrors(map);
       return;
     }
+    // Combine date + time into a single Date
+    const [h, m] = parsed.data.expiryTime.split(":").map(Number);
+    const combined = new Date(parsed.data.expiryDate);
+    combined.setHours(h, m, 0, 0);
+
     if (editing && bot) {
       botsStore.update(bot.id, {
         name: parsed.data.name,
         description: parsed.data.description,
-        expiryDate: parsed.data.expiryDate.toISOString(),
+        expiryDate: combined.toISOString(),
       });
       toast.success("BOT updated");
     } else {
@@ -74,7 +91,7 @@ export function BotFormDialog({
         ownerId,
         name: parsed.data.name,
         description: parsed.data.description,
-        expiryDate: parsed.data.expiryDate.toISOString(),
+        expiryDate: combined.toISOString(),
       });
       toast.success("BOT created", { description: `ID: ${created.id}` });
     }
@@ -101,31 +118,48 @@ export function BotFormDialog({
             <Textarea id="bdesc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What does this BOT do?" />
             {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
           </div>
-          <div className="space-y-2">
-            <Label>Expiry date</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : "Pick a date"}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
-                  initialFocus
-                  className={cn("p-3 pointer-events-auto")}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
+            <div className="space-y-2">
+              <Label>Expiry date</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? format(date, "PPP") : "Pick a date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    disabled={(d) => d < new Date(new Date().setHours(0, 0, 0, 0))}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              {errors.expiryDate && <p className="text-xs text-destructive">{errors.expiryDate}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="btime">Expiry time</Label>
+              <div className="relative">
+                <Clock className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  id="btime"
+                  type="time"
+                  value={time}
+                  onChange={(e) => setTime(e.target.value)}
+                  className="pl-8"
+                  step={60}
                 />
-              </PopoverContent>
-            </Popover>
-            {errors.expiryDate && <p className="text-xs text-destructive">{errors.expiryDate}</p>}
+              </div>
+              {errors.expiryTime && <p className="text-xs text-destructive">{errors.expiryTime}</p>}
+            </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>

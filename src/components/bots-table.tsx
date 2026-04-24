@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Copy, Edit2, ExternalLink, Search, Trash2 } from "lucide-react";
+import { Check, Copy, Edit2, ExternalLink, Filter, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -16,6 +16,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { botsStore, formatDateTime, getBotStatus, type Bot, type BotStatus } from "@/lib/storage";
 
@@ -66,23 +73,48 @@ function firstWords(text: string, n = 3): string {
   return `${words.slice(0, n).join(" ")}…`;
 }
 
-function daysRemaining(expiryIso: string): number {
-  const ms = new Date(expiryIso).getTime() - Date.now();
-  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+function getRemaining(expiryIso: string) {
+  let ms = new Date(expiryIso).getTime() - Date.now();
+  const expired = ms <= 0;
+  ms = Math.abs(ms);
+  return {
+    expired,
+    totalMs: ms,
+    days: Math.floor(ms / 86_400_000),
+    hours: Math.floor((ms % 86_400_000) / 3_600_000),
+    minutes: Math.floor((ms % 3_600_000) / 60_000),
+    seconds: Math.floor((ms % 60_000) / 1000),
+  };
 }
 
-function DaysRemaining({ expiryIso }: { expiryIso: string }) {
-  const days = daysRemaining(expiryIso);
-  if (days < 0)
-    return <span className="text-destructive">Expired {Math.abs(days)}d ago</span>;
-  if (days === 0) return <span className="text-warning-foreground">Today</span>;
-  const tone = days <= 7 ? "text-warning-foreground" : "text-foreground";
+function Countdown({ expiryIso }: { expiryIso: string }) {
+  const r = getRemaining(expiryIso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (r.expired) {
+    return (
+      <span className="font-mono text-xs tabular-nums text-destructive">
+        −{r.days}d {pad(r.hours)}:{pad(r.minutes)}:{pad(r.seconds)}
+      </span>
+    );
+  }
+  const tone =
+    r.days === 0 && r.hours < 24
+      ? "text-destructive"
+      : r.days <= 1
+        ? "text-warning-foreground"
+        : r.days <= 7
+          ? "text-foreground"
+          : "text-foreground";
   return (
-    <span className={tone}>
-      {days} {days === 1 ? "day" : "days"}
+    <span className={`font-mono text-xs tabular-nums ${tone}`}>
+      {r.days > 0 && <span className="font-semibold">{r.days}d </span>}
+      {pad(r.hours)}:{pad(r.minutes)}:{pad(r.seconds)}
     </span>
   );
 }
+
+type RemainingFilter = "all" | "expired" | "today" | "1d" | "3d" | "5d" | "7d" | "30d" | "30d+";
+type StatusFilter = "all" | BotStatus;
 
 export function BotsTable({
   ownerId,
@@ -98,6 +130,8 @@ export function BotsTable({
   const [bots, setBots] = useState<Bot[]>([]);
   const [_tick, setTick] = useState(0);
   const [toDelete, setToDelete] = useState<Bot | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
+  const [remainingFilter, setRemainingFilter] = useState<RemainingFilter>("all");
 
   useEffect(() => {
     const refresh = () => setBots(botsStore.byOwner(ownerId));
@@ -105,8 +139,8 @@ export function BotsTable({
     const handler = () => refresh();
     window.addEventListener("bvm:change", handler);
     window.addEventListener("storage", handler);
-    // tick every 30s so expired status updates live
-    const interval = setInterval(() => setTick((t) => t + 1), 30000);
+    // tick every second so countdown stays live
+    const interval = setInterval(() => setTick((t) => t + 1), 1000);
     return () => {
       window.removeEventListener("bvm:change", handler);
       window.removeEventListener("storage", handler);
@@ -116,9 +150,45 @@ export function BotsTable({
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return bots;
-    return bots.filter((b) => b.id.toLowerCase().includes(q) || b.name.toLowerCase().includes(q));
-  }, [bots, search]);
+    const DAY = 86_400_000;
+    return bots.filter((b) => {
+      if (q && !(b.id.toLowerCase().includes(q) || b.name.toLowerCase().includes(q))) return false;
+
+      const status = getBotStatus(b);
+      if (statusFilter !== "all" && status !== statusFilter) return false;
+
+      if (remainingFilter !== "all") {
+        const ms = new Date(b.expiryDate).getTime() - Date.now();
+        switch (remainingFilter) {
+          case "expired":
+            if (ms > 0) return false;
+            break;
+          case "today":
+            if (ms <= 0 || ms > DAY) return false;
+            break;
+          case "1d":
+            if (ms <= 0 || ms > DAY) return false;
+            break;
+          case "3d":
+            if (ms <= 0 || ms > 3 * DAY) return false;
+            break;
+          case "5d":
+            if (ms <= 0 || ms > 5 * DAY) return false;
+            break;
+          case "7d":
+            if (ms <= 0 || ms > 7 * DAY) return false;
+            break;
+          case "30d":
+            if (ms <= 0 || ms > 30 * DAY) return false;
+            break;
+          case "30d+":
+            if (ms <= 30 * DAY) return false;
+            break;
+        }
+      }
+      return true;
+    });
+  }, [bots, search, statusFilter, remainingFilter]);
 
   const apiUrl = (b: Bot) =>
     typeof window !== "undefined" ? `${window.location.origin}/api/bot/${b.id}` : `/api/bot/${b.id}`;
@@ -126,21 +196,72 @@ export function BotsTable({
   return (
     <TooltipProvider delayDuration={150}>
       <div className="rounded-2xl border border-border/60 bg-card shadow-soft">
-        <div className="flex flex-col gap-3 border-b border-border/60 p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h2 className="text-lg font-semibold">Your BOTs</h2>
-            <p className="text-sm text-muted-foreground">
-              {filtered.length} of {bots.length} {bots.length === 1 ? "BOT" : "BOTs"}
-            </p>
+        <div className="flex flex-col gap-3 border-b border-border/60 p-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold">Your BOTs</h2>
+              <p className="text-sm text-muted-foreground">
+                {filtered.length} of {bots.length} {bots.length === 1 ? "BOT" : "BOTs"}
+              </p>
+            </div>
+            <div className="relative w-full sm:max-w-xs">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => onSearch(e.target.value)}
+                placeholder="Search by ID or name…"
+                className="pl-9"
+              />
+            </div>
           </div>
-          <div className="relative w-full sm:max-w-xs">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search by ID or name…"
-              className="pl-9"
-            />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+              <Filter className="h-3.5 w-3.5" />
+              Filters:
+            </div>
+            <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
+              <SelectTrigger className="h-9 w-full sm:w-[160px]">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
+                <SelectItem value="blocked">Blocked</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              value={remainingFilter}
+              onValueChange={(v) => setRemainingFilter(v as RemainingFilter)}
+            >
+              <SelectTrigger className="h-9 w-full sm:w-[200px]">
+                <SelectValue placeholder="All remaining time" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Any remaining time</SelectItem>
+                <SelectItem value="expired">Expired only</SelectItem>
+                <SelectItem value="today">Within 24 hours</SelectItem>
+                <SelectItem value="1d">≤ 1 day</SelectItem>
+                <SelectItem value="3d">≤ 3 days</SelectItem>
+                <SelectItem value="5d">≤ 5 days</SelectItem>
+                <SelectItem value="7d">≤ 7 days</SelectItem>
+                <SelectItem value="30d">≤ 30 days</SelectItem>
+                <SelectItem value="30d+">More than 30 days</SelectItem>
+              </SelectContent>
+            </Select>
+            {(statusFilter !== "all" || remainingFilter !== "all") && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setStatusFilter("all");
+                  setRemainingFilter("all");
+                }}
+                className="h-9"
+              >
+                Clear
+              </Button>
+            )}
           </div>
         </div>
 
@@ -166,7 +287,7 @@ export function BotsTable({
                     <th className="px-4 py-3 font-medium">ID</th>
                     <th className="px-4 py-3 font-medium">API</th>
                     <th className="px-4 py-3 font-medium">Expiry</th>
-                    <th className="px-4 py-3 font-medium">Days Left</th>
+                    <th className="px-4 py-3 font-medium">Remaining</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Block</th>
                     <th className="px-4 py-3 text-right font-medium">Actions</th>
@@ -228,7 +349,7 @@ export function BotsTable({
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">{formatDateTime(b.expiryDate)}</td>
                           <td className="px-4 py-3 text-sm font-medium">
-                            <DaysRemaining expiryIso={b.expiryDate} />
+                            <Countdown expiryIso={b.expiryDate} />
                           </td>
                           <td className="px-4 py-3">
                             <StatusBadge status={status} />
@@ -309,8 +430,8 @@ export function BotsTable({
                           <span>{formatDateTime(b.expiryDate)}</span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-muted-foreground">Days Left</span>
-                          <DaysRemaining expiryIso={b.expiryDate} />
+                          <span className="text-muted-foreground">Remaining</span>
+                          <Countdown expiryIso={b.expiryDate} />
                         </div>
                       </div>
 
