@@ -1,13 +1,13 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { ArrowRight, Bot, KeyRound, ShieldCheck, Zap } from "lucide-react";
-import { sessionStore } from "@/lib/storage";
+import { tokenStore } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { CodexlyFooter } from "@/components/codexly-footer";
 
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
-    if (typeof window !== "undefined" && sessionStore.get()) {
+    if (typeof window !== "undefined" && tokenStore.get()) {
       throw redirect({ to: "/dashboard" });
     }
   },
@@ -55,7 +55,7 @@ function Landing() {
         >
           <span className="inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/60 px-3 py-1 text-xs font-medium text-muted-foreground backdrop-blur">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-success" />
-            Demo mode — data lives in your browser
+            Live — backed by your own MongoDB
           </span>
           <h1 className="mt-6 text-4xl font-bold leading-tight tracking-tight sm:text-6xl">
             Manage your <span className="text-gradient-sunset">APPLICATION validity</span> APIs in one place
