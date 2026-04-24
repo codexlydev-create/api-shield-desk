@@ -199,9 +199,9 @@ export function BotsTable({
         <div className="flex flex-col gap-3 border-b border-border/60 p-4">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h2 className="text-lg font-semibold">Your BOTs</h2>
+              <h2 className="text-lg font-semibold">Your APPLICATIONs</h2>
               <p className="text-sm text-muted-foreground">
-                {filtered.length} of {bots.length} {bots.length === 1 ? "BOT" : "BOTs"}
+                {filtered.length} of {bots.length} {bots.length === 1 ? "APPLICATION" : "APPLICATIONs"}
               </p>
             </div>
             <div className="relative w-full sm:max-w-xs">
@@ -270,9 +270,9 @@ export function BotsTable({
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-sunset/10">
               <Search className="h-5 w-5 text-muted-foreground" />
             </div>
-            <p className="font-medium">{bots.length === 0 ? "No BOTs yet" : "No matches"}</p>
+            <p className="font-medium">{bots.length === 0 ? "No APPLICATIONs yet" : "No matches"}</p>
             <p className="text-sm text-muted-foreground">
-              {bots.length === 0 ? "Create your first BOT to get started." : "Try a different search term."}
+              {bots.length === 0 ? "Create your first APPLICATION to get started." : "Try a different search term."}
             </p>
           </div>
         ) : (
@@ -282,7 +282,7 @@ export function BotsTable({
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                    <th className="px-4 py-3 font-medium">BOT Name</th>
+                    <th className="px-4 py-3 font-medium">APPLICATION Name</th>
                     <th className="px-4 py-3 font-medium">Description</th>
                     <th className="px-4 py-3 font-medium">ID</th>
                     <th className="px-4 py-3 font-medium">API</th>
@@ -359,7 +359,7 @@ export function BotsTable({
                               checked={b.blocked}
                               onCheckedChange={(checked) => {
                                 botsStore.update(b.id, { blocked: checked });
-                                toast.success(checked ? "BOT blocked" : "BOT unblocked");
+                                toast.success(checked ? "APPLICATION blocked" : "APPLICATION unblocked");
                               }}
                             />
                           </td>
@@ -441,7 +441,7 @@ export function BotsTable({
                             checked={b.blocked}
                             onCheckedChange={(c) => {
                               botsStore.update(b.id, { blocked: c });
-                              toast.success(c ? "BOT blocked" : "BOT unblocked");
+                              toast.success(c ? "APPLICATION blocked" : "APPLICATION unblocked");
                             }}
                           />
                           <span className="text-muted-foreground">Block</span>
@@ -472,7 +472,7 @@ export function BotsTable({
       <AlertDialog open={!!toDelete} onOpenChange={(o) => !o && setToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete this BOT?</AlertDialogTitle>
+            <AlertDialogTitle>Delete this APPLICATION?</AlertDialogTitle>
             <AlertDialogDescription>
               This permanently removes <span className="font-semibold">{toDelete?.name}</span> ({toDelete?.id}) and its
               API endpoint. This action cannot be undone.
@@ -485,7 +485,7 @@ export function BotsTable({
               onClick={() => {
                 if (toDelete) {
                   botsStore.remove(toDelete.id);
-                  toast.success("BOT deleted");
+                  toast.success("APPLICATION deleted");
                   setToDelete(null);
                 }
               }}
