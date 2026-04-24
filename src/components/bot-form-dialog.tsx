@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { format } from "date-fns";
-import { CalendarIcon, Clock } from "lucide-react";
+import { CalendarIcon, Clock, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
@@ -48,6 +48,7 @@ export function BotFormDialog({
   const [date, setDate] = useState<Date | undefined>();
   const [time, setTime] = useState("23:59");
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (open) {
@@ -65,7 +66,7 @@ export function BotFormDialog({
     }
   }, [open, bot]);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = schema.safeParse({ name, description, expiryDate: date, expiryTime: time });
     if (!parsed.success) {
@@ -74,6 +75,8 @@ export function BotFormDialog({
       setErrors(map);
       return;
     }
+    setSaving(true);
+    await new Promise((r) => setTimeout(r, 350));
     // Combine date + time into a single Date
     const [h, m] = parsed.data.expiryTime.split(":").map(Number);
     const combined = new Date(parsed.data.expiryDate);
@@ -95,6 +98,7 @@ export function BotFormDialog({
       });
       toast.success("APPLICATION created", { description: `ID: ${created.id}` });
     }
+    setSaving(false);
     onOpenChange(false);
   };
 
@@ -162,10 +166,14 @@ export function BotFormDialog({
             </div>
           </div>
           <DialogFooter className="gap-2 sm:gap-2">
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
             <motion.div whileTap={{ scale: 0.97 }}>
-              <Button type="submit" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-                {editing ? "Save changes" : "Create APPLICATION"}
+              <Button type="submit" disabled={saving} className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+                {saving ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {editing ? "Saving…" : "Creating…"}</>
+                ) : (
+                  editing ? "Save changes" : "Create APPLICATION"
+                )}
               </Button>
             </motion.div>
           </DialogFooter>

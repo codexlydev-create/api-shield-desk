@@ -1,7 +1,7 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { BadgeCheck, KeyRound, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
+import { BadgeCheck, KeyRound, Loader2, Mail, ShieldCheck, User as UserIcon } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { hashPassword, otpStore, sessionStore, usersStore } from "@/lib/storage";
@@ -155,8 +155,10 @@ function ChangeEmailDialog({
   const [newEmail, setNewEmail] = useState("");
   const [step, setStep] = useState<"input" | "otp">("input");
   const [otp, setOtp] = useState("");
+  const [sending, setSending] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
-  const sendOtp = (e: React.FormEvent) => {
+  const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = z.string().email().safeParse(newEmail.trim());
     if (!parsed.success) {
@@ -167,20 +169,27 @@ function ChangeEmailDialog({
       toast.error("Email already in use");
       return;
     }
+    setSending(true);
+    await new Promise((r) => setTimeout(r, 400));
     const code = otpStore.generate(newEmail, "change-email", { userId: user!.id });
     toast.success("OTP sent (demo)", { description: `Code: ${code}`, duration: 15000 });
+    setSending(false);
     setStep("otp");
   };
 
-  const verify = (e: React.FormEvent) => {
+  const verify = async (e: React.FormEvent) => {
     e.preventDefault();
+    setVerifying(true);
+    await new Promise((r) => setTimeout(r, 400));
     const v = otpStore.verify(newEmail, "change-email", otp);
     if (!v.ok) {
+      setVerifying(false);
       toast.error("Invalid or expired code");
       return;
     }
     usersStore.update(user!.id, { email: newEmail.trim(), emailVerified: true });
     toast.success("Email updated");
+    setVerifying(false);
     onDone();
     onOpenChange(false);
     setStep("input");
@@ -204,9 +213,9 @@ function ChangeEmailDialog({
               <Input id="newEmail" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required />
             </div>
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-              <Button type="submit" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-                Send code
+              <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
+              <Button type="submit" disabled={sending} className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+                {sending ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending…</>) : "Send code"}
               </Button>
             </DialogFooter>
           </form>
@@ -228,9 +237,9 @@ function ChangeEmailDialog({
               </InputOTP>
             </div>
             <DialogFooter>
-              <Button type="button" variant="ghost" onClick={() => setStep("input")}>Back</Button>
-              <Button type="submit" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-                Verify & update
+              <Button type="button" variant="ghost" onClick={() => setStep("input")} disabled={verifying}>Back</Button>
+              <Button type="submit" disabled={verifying} className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+                {verifying ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…</>) : "Verify & update"}
               </Button>
             </DialogFooter>
           </form>
@@ -252,8 +261,9 @@ function ChangePasswordDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const { user } = useAuth();
   const [data, setData] = useState({ current: "", next: "", confirm: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [updating, setUpdating] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = pwSchema.safeParse(data);
     if (!parsed.success) {
@@ -266,10 +276,13 @@ function ChangePasswordDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       setErrors({ current: "Incorrect current password" });
       return;
     }
+    setUpdating(true);
+    await new Promise((r) => setTimeout(r, 400));
     usersStore.update(user!.id, { passwordHash: hashPassword(data.next) });
     toast.success("Password updated");
     setData({ current: "", next: "", confirm: "" });
     setErrors({});
+    setUpdating(false);
     onOpenChange(false);
   };
 
@@ -297,9 +310,9 @@ function ChangePasswordDialog({ open, onOpenChange }: { open: boolean; onOpenCha
             {errors.confirm && <p className="text-xs text-destructive">{errors.confirm}</p>}
           </div>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-              Update password
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={updating}>Cancel</Button>
+            <Button type="submit" disabled={updating} className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+              {updating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating…</>) : "Update password"}
             </Button>
           </DialogFooter>
         </form>

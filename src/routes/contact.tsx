@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Bot, Mail, MapPin, MessageSquare, Send } from "lucide-react";
+import { Bot, Loader2, Mail, MapPin, MessageSquare, Send } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { CodexlyFooter } from "@/components/codexly-footer";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -95,13 +96,13 @@ function ContactPage() {
             <InfoCard
               icon={Mail}
               title="Email"
-              value="hello@application-validity.app"
+              value="codexlydev@gmail.com"
               hint="We typically reply within 1 business day."
             />
             <InfoCard
               icon={MessageSquare}
               title="Support"
-              value="support@application-validity.app"
+              value="codexlydev@gmail.com"
               hint="For account or API endpoint issues."
             />
             <InfoCard
@@ -162,12 +163,21 @@ function ContactPage() {
                 disabled={sending}
                 className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95"
               >
-                <Send className="mr-1.5 h-4 w-4" /> {sending ? "Sending…" : "Send message"}
+                {sending ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> Sending…
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-1.5 h-4 w-4" /> Send message
+                  </>
+                )}
               </Button>
             </div>
           </motion.form>
         </div>
       </main>
+      <CodexlyFooter />
     </div>
   );
 }

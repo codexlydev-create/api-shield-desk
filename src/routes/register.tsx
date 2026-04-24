@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AuthShell } from "@/components/auth-shell";
@@ -39,7 +40,9 @@ function RegisterPage() {
   const [otp, setOtp] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [sendingOtp, setSendingOtp] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = schema.safeParse(data);
     if (!parsed.success) {
@@ -53,21 +56,25 @@ function RegisterPage() {
       toast.error("An account with this email already exists.");
       return;
     }
+    setSendingOtp(true);
+    await new Promise((r) => setTimeout(r, 400));
     const code = otpStore.generate(data.email, "register");
     toast.success("OTP sent (demo mode)", {
       description: `Your code: ${code}`,
       duration: 15000,
     });
+    setSendingOtp(false);
     setStep("otp");
   };
 
-  const handleVerify = (e: React.FormEvent) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (otp.length !== 6) {
       toast.error("Enter the 6-digit code");
       return;
     }
     setSubmitting(true);
+    await new Promise((r) => setTimeout(r, 400));
     const res = otpStore.verify(data.email, "register", otp);
     if (!res.ok) {
       toast.error("Invalid or expired code");
@@ -115,8 +122,8 @@ function RegisterPage() {
             <PasswordInput id="confirm" value={data.confirm} onChange={(e) => setData({ ...data, confirm: e.target.value })} />
             {errors.confirm && <p className="text-xs text-destructive">{errors.confirm}</p>}
           </div>
-          <Button type="submit" className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-            Send verification code
+          <Button type="submit" disabled={sendingOtp} className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+            {sendingOtp ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending code…</>) : "Send verification code"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             Already registered?{" "}
@@ -147,7 +154,7 @@ function RegisterPage() {
             </InputOTP>
           </div>
           <Button type="submit" disabled={submitting} className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-            {submitting ? "Verifying…" : "Verify & create account"}
+            {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verifying…</>) : "Verify & create account"}
           </Button>
           <button
             type="button"

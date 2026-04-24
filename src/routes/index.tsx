@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, Bot, KeyRound, ShieldCheck, Zap } from "lucide-react";
 import { sessionStore } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
+import { CodexlyFooter } from "@/components/codexly-footer";
 
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
@@ -102,6 +103,7 @@ function Landing() {
           ))}
         </div>
       </main>
+      <CodexlyFooter />
     </div>
   );
 }

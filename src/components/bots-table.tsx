@@ -283,13 +283,13 @@ export function BotsTable({
             {(statusFilter !== "all" || remainingFilter !== "all" || sortOrder !== "none") && (
               <Button
                 size="sm"
-                variant="ghost"
+                variant="outline"
                 onClick={() => {
                   setStatusFilter("all");
                   setRemainingFilter("all");
                   setSortOrder("none");
                 }}
-                className="h-9"
+                className="h-9 border-border"
               >
                 Clear
               </Button>
