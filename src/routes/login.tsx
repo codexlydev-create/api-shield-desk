@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
@@ -19,12 +20,14 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const handle = (e: React.FormEvent) => {
+  const handle = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
+    // Brief artificial delay so the loading state is visible
+    await new Promise((r) => setTimeout(r, 400));
     const res = login(email.trim(), password);
-    setSubmitting(false);
     if (!res.ok) {
+      setSubmitting(false);
       toast.error(res.error ?? "Login failed");
       return;
     }
@@ -49,7 +52,7 @@ function LoginPage() {
           <PasswordInput id="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
         </div>
         <Button type="submit" disabled={submitting} className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-          {submitting ? "Logging in…" : "Log in"}
+          {submitting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in…</>) : "Log in"}
         </Button>
         <p className="text-center text-sm text-muted-foreground">
           New here?{" "}
