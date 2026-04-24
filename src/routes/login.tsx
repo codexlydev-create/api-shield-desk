@@ -23,9 +23,7 @@ function LoginPage() {
   const handle = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    // Brief artificial delay so the loading state is visible
-    await new Promise((r) => setTimeout(r, 400));
-    const res = login(email.trim(), password);
+    const res = await login(email.trim(), password);
     if (!res.ok) {
       setSubmitting(false);
       toast.error(res.error ?? "Login failed");
