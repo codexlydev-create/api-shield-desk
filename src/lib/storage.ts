@@ -1,9 +1,10 @@
 // Hybrid Bot/Application store.
-// - When the backend API is reachable AND the user is authenticated, all reads/writes
-//   go through the API (and the local cache is kept in sync as a fallback).
-// - When the backend is offline (no DB / no server), everything falls back to
-//   localStorage so the app keeps working. As soon as the API comes back online,
-//   any locally-created/edited/deleted records are flushed to the server.
+// - Writes are applied optimistically to a local cache AND queued as pending ops.
+// - When the backend API is reachable AND the user is authenticated, pending
+//   ops are flushed to the server, then the server's list becomes the new
+//   source of truth (merged with any still-pending local changes).
+// - When the backend is offline, everything keeps working from localStorage
+//   and the queue drains automatically the moment connectivity returns.
 
 import { applicationsApi, tokenStore, type Application } from "./api";
 
@@ -17,6 +18,7 @@ export {
 
 const CACHE_KEY = "avm_bots_cache_v1";
 const PENDING_KEY = "avm_bots_pending_v1";
+const TOMBSTONE_KEY = "avm_bots_tombstones_v1";
 
 type PendingOp =
   | { kind: "create"; tempId: string; ownerId: string; name: string; description: string; expiryDate: string }
@@ -65,6 +67,36 @@ function addPending(op: PendingOp) {
   writePending(ops);
 }
 
+// Tombstones: IDs that the user deleted locally but which may still exist on
+// the server until the next flush. Used to prevent the server's list response
+// from resurrecting a deleted row in the UI.
+function readTombstones(): string[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(TOMBSTONE_KEY);
+    return raw ? (JSON.parse(raw) as string[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeTombstones(ids: string[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOMBSTONE_KEY, JSON.stringify(ids));
+}
+
+function addTombstone(id: string) {
+  const t = readTombstones();
+  if (!t.includes(id)) {
+    t.push(id);
+    writeTombstones(t);
+  }
+}
+
+function clearTombstone(id: string) {
+  writeTombstones(readTombstones().filter((x) => x !== id));
+}
+
 function randomLocalId() {
   const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   let s = "local-";
@@ -77,7 +109,6 @@ function isOnline() {
 }
 
 let syncing = false;
-let lastFetchAt = 0;
 
 async function flushPending() {
   const token = tokenStore.get();
@@ -100,7 +131,16 @@ async function flushPending() {
         await applicationsApi.update(realId, op.patch);
       } else if (op.kind === "delete") {
         const realId = idMap[op.id] ?? op.id;
-        await applicationsApi.remove(realId);
+        try {
+          await applicationsApi.remove(realId);
+        } catch (err) {
+          // If the item was never on the server (e.g. create never flushed
+          // because the user went offline first), a 404 is a success for us.
+          const status = (err as { status?: number })?.status;
+          if (status !== 404) throw err;
+        }
+        clearTombstone(op.id);
+        clearTombstone(realId);
       }
     } catch {
       // Keep it pending; we'll retry next sync.
@@ -115,20 +155,61 @@ async function flushPending() {
   }
 }
 
-async function syncFromServer(force = false): Promise<Application[] | null> {
+/**
+ * Merge the authoritative server list with local pending changes so the UI
+ * never "flashes back" to stale data while ops are still queued.
+ */
+function mergeServerList(server: Application[]): Application[] {
+  const pending = readPending();
+  const tombstones = new Set(readTombstones());
+
+  // Start with the server list, drop anything the user has deleted locally.
+  const byId = new Map<string, Application>();
+  for (const a of server) {
+    if (!tombstones.has(a.id)) byId.set(a.id, a);
+  }
+
+  // Re-apply queued local changes on top.
+  for (const op of pending) {
+    if (op.kind === "create") {
+      // Keep the optimistic temp record until the create flushes.
+      if (!Array.from(byId.values()).some((a) => a.id === op.tempId)) {
+        byId.set(op.tempId, {
+          id: op.tempId,
+          ownerId: op.ownerId || "local",
+          name: op.name,
+          description: op.description,
+          expiryDate: op.expiryDate,
+          blocked: false,
+          apiKey: "pending",
+          createdAt: new Date().toISOString(),
+        });
+      }
+    } else if (op.kind === "update") {
+      const cur = byId.get(op.id);
+      if (cur) byId.set(op.id, { ...cur, ...op.patch });
+    } else if (op.kind === "delete") {
+      byId.delete(op.id);
+    }
+  }
+  return Array.from(byId.values()).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+  );
+}
+
+async function syncFromServer(): Promise<Application[] | null> {
   const token = tokenStore.get();
   if (!token) return null;
   if (!isOnline()) return null;
   if (syncing) return null;
-  if (!force && Date.now() - lastFetchAt < 4000) return null;
   syncing = true;
   try {
     await flushPending();
     const res = await applicationsApi.list();
-    writeCache(res.applications);
-    lastFetchAt = Date.now();
+    const merged = mergeServerList(res.applications);
+    writeCache(merged);
     emit();
-    return res.applications;
+    return merged;
   } catch {
     return null;
   } finally {
@@ -138,10 +219,10 @@ async function syncFromServer(force = false): Promise<Application[] | null> {
 
 if (typeof window !== "undefined") {
   window.addEventListener("online", () => {
-    void syncFromServer(true);
+    void syncFromServer();
   });
   window.addEventListener("avm:auth", () => {
-    void syncFromServer(true);
+    void syncFromServer();
   });
 }
 
@@ -149,10 +230,14 @@ export const botsStore = {
   /** Synchronous read from the local cache. Triggers a background server sync. */
   byOwner(ownerId: string): Application[] {
     void syncFromServer();
-    return readCache().filter((b) => b.ownerId === ownerId || b.ownerId === "local");
+    const tombstones = new Set(readTombstones());
+    return readCache().filter(
+      (b) => (b.ownerId === ownerId || b.ownerId === "local") && !tombstones.has(b.id),
+    );
   },
   byId(id: string): Application | undefined {
     void syncFromServer();
+    if (readTombstones().includes(id)) return undefined;
     return readCache().find((b) => b.id === id);
   },
   create(input: { ownerId: string; name: string; description: string; expiryDate: string }): Application {
@@ -179,7 +264,7 @@ export const botsStore = {
       expiryDate: input.expiryDate,
     });
     emit();
-    void syncFromServer(true);
+    void syncFromServer();
     return optimistic;
   },
   update(id: string, patch: Partial<Pick<Application, "name" | "description" | "expiryDate" | "blocked">>) {
@@ -187,17 +272,18 @@ export const botsStore = {
     writeCache(cache);
     addPending({ kind: "update", id, patch });
     emit();
-    void syncFromServer(true);
+    void syncFromServer();
   },
   remove(id: string) {
     const cache = readCache().filter((b) => b.id !== id);
     writeCache(cache);
+    addTombstone(id);
     addPending({ kind: "delete", id });
     emit();
-    void syncFromServer(true);
+    void syncFromServer();
   },
   /** Force a refresh from the server. */
-  refresh: () => syncFromServer(true),
+  refresh: () => syncFromServer(),
 };
 
 // Session helpers used by route guards. The auth-context owns the real state;
