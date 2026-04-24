@@ -25,6 +25,10 @@ const schema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(60),
   description: z.string().trim().max(300).optional().default(""),
   expiryDate: z.date({ required_error: "Pick an expiry date" }),
+  expiryTime: z
+    .string()
+    .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Use HH:MM (24h)")
+    .default("23:59"),
 });
 
 export function BotFormDialog({
@@ -42,31 +46,44 @@ export function BotFormDialog({
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState<Date | undefined>();
+  const [time, setTime] = useState("23:59");
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (open) {
       setName(bot?.name ?? "");
       setDescription(bot?.description ?? "");
-      setDate(bot?.expiryDate ? new Date(bot.expiryDate) : undefined);
+      if (bot?.expiryDate) {
+        const d = new Date(bot.expiryDate);
+        setDate(d);
+        setTime(`${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`);
+      } else {
+        setDate(undefined);
+        setTime("23:59");
+      }
       setErrors({});
     }
   }, [open, bot]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = schema.safeParse({ name, description, expiryDate: date });
+    const parsed = schema.safeParse({ name, description, expiryDate: date, expiryTime: time });
     if (!parsed.success) {
       const map: Record<string, string> = {};
       parsed.error.issues.forEach((i) => (map[i.path[0] as string] = i.message));
       setErrors(map);
       return;
     }
+    // Combine date + time into a single Date
+    const [h, m] = parsed.data.expiryTime.split(":").map(Number);
+    const combined = new Date(parsed.data.expiryDate);
+    combined.setHours(h, m, 0, 0);
+
     if (editing && bot) {
       botsStore.update(bot.id, {
         name: parsed.data.name,
         description: parsed.data.description,
-        expiryDate: parsed.data.expiryDate.toISOString(),
+        expiryDate: combined.toISOString(),
       });
       toast.success("BOT updated");
     } else {
@@ -74,7 +91,7 @@ export function BotFormDialog({
         ownerId,
         name: parsed.data.name,
         description: parsed.data.description,
-        expiryDate: parsed.data.expiryDate.toISOString(),
+        expiryDate: combined.toISOString(),
       });
       toast.success("BOT created", { description: `ID: ${created.id}` });
     }
