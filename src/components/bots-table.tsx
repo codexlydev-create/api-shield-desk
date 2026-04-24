@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Copy, Edit2, ExternalLink, Search, Trash2 } from "lucide-react";
+import { Check, Copy, Edit2, ExternalLink, Filter, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -16,6 +16,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { botsStore, formatDateTime, getBotStatus, type Bot, type BotStatus } from "@/lib/storage";
 
@@ -66,23 +73,48 @@ function firstWords(text: string, n = 3): string {
   return `${words.slice(0, n).join(" ")}…`;
 }
 
-function daysRemaining(expiryIso: string): number {
-  const ms = new Date(expiryIso).getTime() - Date.now();
-  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+function getRemaining(expiryIso: string) {
+  let ms = new Date(expiryIso).getTime() - Date.now();
+  const expired = ms <= 0;
+  ms = Math.abs(ms);
+  return {
+    expired,
+    totalMs: ms,
+    days: Math.floor(ms / 86_400_000),
+    hours: Math.floor((ms % 86_400_000) / 3_600_000),
+    minutes: Math.floor((ms % 3_600_000) / 60_000),
+    seconds: Math.floor((ms % 60_000) / 1000),
+  };
 }
 
-function DaysRemaining({ expiryIso }: { expiryIso: string }) {
-  const days = daysRemaining(expiryIso);
-  if (days < 0)
-    return <span className="text-destructive">Expired {Math.abs(days)}d ago</span>;
-  if (days === 0) return <span className="text-warning-foreground">Today</span>;
-  const tone = days <= 7 ? "text-warning-foreground" : "text-foreground";
+function Countdown({ expiryIso }: { expiryIso: string }) {
+  const r = getRemaining(expiryIso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  if (r.expired) {
+    return (
+      <span className="font-mono text-xs tabular-nums text-destructive">
+        −{r.days}d {pad(r.hours)}:{pad(r.minutes)}:{pad(r.seconds)}
+      </span>
+    );
+  }
+  const tone =
+    r.days === 0 && r.hours < 24
+      ? "text-destructive"
+      : r.days <= 1
+        ? "text-warning-foreground"
+        : r.days <= 7
+          ? "text-foreground"
+          : "text-foreground";
   return (
-    <span className={tone}>
-      {days} {days === 1 ? "day" : "days"}
+    <span className={`font-mono text-xs tabular-nums ${tone}`}>
+      {r.days > 0 && <span className="font-semibold">{r.days}d </span>}
+      {pad(r.hours)}:{pad(r.minutes)}:{pad(r.seconds)}
     </span>
   );
 }
+
+type RemainingFilter = "all" | "expired" | "today" | "1d" | "3d" | "5d" | "7d" | "30d" | "30d+";
+type StatusFilter = "all" | BotStatus;
 
 export function BotsTable({
   ownerId,
