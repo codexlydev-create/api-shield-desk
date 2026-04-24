@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Check, Copy, Edit2, ExternalLink, Filter, Search, Trash2 } from "lucide-react";
+import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, Copy, Edit2, ExternalLink, Filter, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   AlertDialog,
@@ -115,6 +115,7 @@ function Countdown({ expiryIso }: { expiryIso: string }) {
 
 type RemainingFilter = "all" | "expired" | "today" | "1d" | "3d" | "5d" | "7d" | "30d" | "30d+";
 type StatusFilter = "all" | BotStatus;
+type SortOrder = "none" | "remaining-desc" | "remaining-asc";
 
 export function BotsTable({
   ownerId,
@@ -132,6 +133,7 @@ export function BotsTable({
   const [toDelete, setToDelete] = useState<Bot | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [remainingFilter, setRemainingFilter] = useState<RemainingFilter>("all");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("none");
 
   useEffect(() => {
     const refresh = () => setBots(botsStore.byOwner(ownerId));
@@ -151,7 +153,7 @@ export function BotsTable({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const DAY = 86_400_000;
-    return bots.filter((b) => {
+    const list = bots.filter((b) => {
       if (q && !(b.id.toLowerCase().includes(q) || b.name.toLowerCase().includes(q))) return false;
 
       const status = getBotStatus(b);
@@ -188,7 +190,16 @@ export function BotsTable({
       }
       return true;
     });
-  }, [bots, search, statusFilter, remainingFilter]);
+
+    if (sortOrder !== "none") {
+      list.sort((a, b) => {
+        const ta = new Date(a.expiryDate).getTime();
+        const tb = new Date(b.expiryDate).getTime();
+        return sortOrder === "remaining-desc" ? tb - ta : ta - tb;
+      });
+    }
+    return list;
+  }, [bots, search, statusFilter, remainingFilter, sortOrder]);
 
   const apiUrl = (b: Bot) =>
     typeof window !== "undefined" ? `${window.location.origin}/api/bot/${b.id}` : `/api/bot/${b.id}`;
@@ -249,13 +260,34 @@ export function BotsTable({
                 <SelectItem value="30d+">More than 30 days</SelectItem>
               </SelectContent>
             </Select>
-            {(statusFilter !== "all" || remainingFilter !== "all") && (
+            <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as SortOrder)}>
+              <SelectTrigger className="h-9 w-full sm:w-[220px]">
+                <SelectValue placeholder="Sort: default order" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sort: default order</SelectItem>
+                <SelectItem value="remaining-desc">
+                  <span className="inline-flex items-center gap-2">
+                    <ArrowDownWideNarrow className="h-3.5 w-3.5" />
+                    High → Low remaining
+                  </span>
+                </SelectItem>
+                <SelectItem value="remaining-asc">
+                  <span className="inline-flex items-center gap-2">
+                    <ArrowUpNarrowWide className="h-3.5 w-3.5" />
+                    Low → High remaining
+                  </span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {(statusFilter !== "all" || remainingFilter !== "all" || sortOrder !== "none") && (
               <Button
                 size="sm"
                 variant="ghost"
                 onClick={() => {
                   setStatusFilter("all");
                   setRemainingFilter("all");
+                  setSortOrder("none");
                 }}
                 className="h-9"
               >
