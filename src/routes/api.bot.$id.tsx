@@ -174,7 +174,9 @@ function BotApiView() {
             </Button>
           </div>
           <pre className="overflow-x-auto bg-background p-5 font-mono text-sm leading-relaxed">
-            <code>{json}</code>
+            <code>
+              <HighlightedJson json={json} liveKeys={["remaining_time", "remaining", "days", "hours", "minutes", "seconds", "status"]} />
+            </code>
           </pre>
         </div>
 
@@ -186,5 +188,79 @@ function BotApiView() {
         )}
       </div>
     </div>
+  );
+}
+
+function HighlightedJson({ json, liveKeys }: { json: string; liveKeys: string[] }) {
+  // Tokenize the JSON line by line and colorize keys, strings, numbers, booleans.
+  const liveSet = new Set(liveKeys);
+  const lines = json.split("\n");
+
+  // Track the current key on each value line so we can highlight live values.
+  return (
+    <>
+      {lines.map((line, i) => {
+        const keyMatch = line.match(/^(\s*)"([^"]+)":\s*(.*)$/);
+        if (keyMatch) {
+          const [, indent, key, rest] = keyMatch;
+          const isLive = liveSet.has(key);
+          return (
+            <div key={i} className={isLive ? "animate-[pulse_2s_ease-in-out_infinite]" : ""}>
+              {indent}
+              <span className="text-primary">"{key}"</span>
+              <span className="text-muted-foreground">: </span>
+              {renderValue(rest, isLive)}
+            </div>
+          );
+        }
+        // structural lines: { } , [ ]
+        return (
+          <div key={i} className="text-muted-foreground">
+            {line}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function renderValue(raw: string, isLive: boolean) {
+  // Strip trailing comma for matching, then re-append.
+  const trailingComma = raw.endsWith(",");
+  const value = trailingComma ? raw.slice(0, -1) : raw;
+  const comma = trailingComma ? <span className="text-muted-foreground">,</span> : null;
+
+  const liveClass = isLive ? "rounded bg-gradient-sunset/15 px-1 font-semibold text-gradient-sunset" : "";
+
+  if (value.startsWith('"') && value.endsWith('"')) {
+    return (
+      <>
+        <span className={`text-success ${liveClass}`}>{value}</span>
+        {comma}
+      </>
+    );
+  }
+  if (/^-?\d+(\.\d+)?$/.test(value)) {
+    return (
+      <>
+        <span className={`text-warning-foreground ${liveClass}`}>{value}</span>
+        {comma}
+      </>
+    );
+  }
+  if (value === "true" || value === "false" || value === "null") {
+    return (
+      <>
+        <span className="text-destructive">{value}</span>
+        {comma}
+      </>
+    );
+  }
+  // Opening brace of nested object
+  return (
+    <>
+      <span className="text-muted-foreground">{value}</span>
+      {comma}
+    </>
   );
 }
