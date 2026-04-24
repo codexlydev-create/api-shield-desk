@@ -435,7 +435,7 @@ export function BotsTable({
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="truncate font-semibold">{b.name}</div>
-                          <p className="text-xs text-muted-foreground">{firstWords(b.description, 3)}</p>
+                          <p className="text-xs text-muted-foreground">{truncateChars(b.description, 15)}</p>
                         </div>
                         <StatusBadge status={status} />
                       </div>
