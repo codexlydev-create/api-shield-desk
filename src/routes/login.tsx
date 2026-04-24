@@ -33,7 +33,7 @@ function LoginPage() {
   };
 
   return (
-    <AuthShell title="Welcome back" subtitle="Log in to manage your BOTs">
+    <AuthShell title="Welcome back" subtitle="Log in to manage your APPLICATIONs">
       <form onSubmit={handle} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>

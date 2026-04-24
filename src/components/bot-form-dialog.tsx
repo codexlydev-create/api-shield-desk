@@ -85,7 +85,7 @@ export function BotFormDialog({
         description: parsed.data.description,
         expiryDate: combined.toISOString(),
       });
-      toast.success("BOT updated");
+      toast.success("APPLICATION updated");
     } else {
       const created = botsStore.create({
         ownerId,
@@ -93,7 +93,7 @@ export function BotFormDialog({
         description: parsed.data.description,
         expiryDate: combined.toISOString(),
       });
-      toast.success("BOT created", { description: `ID: ${created.id}` });
+      toast.success("APPLICATION created", { description: `ID: ${created.id}` });
     }
     onOpenChange(false);
   };
@@ -102,20 +102,20 @@ export function BotFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{editing ? "Edit BOT" : "Create new BOT validity"}</DialogTitle>
+          <DialogTitle>{editing ? "Edit APPLICATION" : "Create new APPLICATION validity"}</DialogTitle>
           <DialogDescription>
-            {editing ? "Update BOT details below." : "Set a name, description and expiry date. We'll generate a unique ID and API endpoint."}
+            {editing ? "Update APPLICATION details below." : "Set a name, description and expiry date. We'll generate a unique ID and API endpoint."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="bname">BOT Name</Label>
-            <Input id="bname" value={name} onChange={(e) => setName(e.target.value)} placeholder="My Telegram bot" />
+            <Label htmlFor="bname">APPLICATION Name</Label>
+            <Input id="bname" value={name} onChange={(e) => setName(e.target.value)} placeholder="My Telegram application" />
             {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="bdesc">Description</Label>
-            <Textarea id="bdesc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What does this BOT do?" />
+            <Textarea id="bdesc" rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="What does this APPLICATION do?" />
             {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
@@ -165,7 +165,7 @@ export function BotFormDialog({
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
             <motion.div whileTap={{ scale: 0.97 }}>
               <Button type="submit" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-                {editing ? "Save changes" : "Create BOT"}
+                {editing ? "Save changes" : "Create APPLICATION"}
               </Button>
             </motion.div>
           </DialogFooter>

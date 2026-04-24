@@ -71,7 +71,7 @@ function DashboardPage() {
           <div>
             <p className="text-sm text-muted-foreground">Welcome back, {user.name.split(" ")[0]} 👋</p>
             <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-              Your <span className="text-gradient-sunset">BOT</span> dashboard
+              Your <span className="text-gradient-sunset">APPLICATION</span> dashboard
             </h1>
           </div>
           <Button
@@ -82,7 +82,7 @@ function DashboardPage() {
             }}
             className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95"
           >
-            <Plus className="mr-1 h-5 w-5" /> Create New BOT's Validity
+            <Plus className="mr-1 h-5 w-5" /> Create New APPLICATION's Validity
           </Button>
         </motion.div>
 

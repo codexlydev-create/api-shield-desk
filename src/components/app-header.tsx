@@ -30,7 +30,7 @@ export function AppHeader() {
             <Bot className="h-5 w-5 text-primary-foreground" />
           </div>
           <span className="text-lg font-bold tracking-tight">
-            <span className="text-gradient-sunset">BOT</span> Validity
+            <span className="text-gradient-sunset">APPLICATION</span> Validity
           </span>
         </Link>
 
