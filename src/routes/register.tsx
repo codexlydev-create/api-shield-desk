@@ -91,7 +91,7 @@ function RegisterPage() {
   return (
     <AuthShell
       title={step === "form" ? "Create your account" : "Verify your email"}
-      subtitle={step === "form" ? "Start managing BOT validities in seconds" : `We sent a 6-digit code to ${data.email}`}
+      subtitle={step === "form" ? "Start managing APPLICATION validities in seconds" : `We sent a 6-digit code to ${data.email}`}
     >
       {step === "form" ? (
         <form onSubmit={handleSubmit} className="space-y-4">

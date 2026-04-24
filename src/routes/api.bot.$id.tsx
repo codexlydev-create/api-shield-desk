@@ -105,7 +105,7 @@ function BotApiView() {
 
         <div className="mt-6">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            <span className="text-gradient-sunset">BOT</span> validity endpoint
+            <span className="text-gradient-sunset">APPLICATION</span> validity endpoint
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">GET /api/bot/{id}</code>
