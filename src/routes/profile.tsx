@@ -261,8 +261,9 @@ function ChangePasswordDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const { user } = useAuth();
   const [data, setData] = useState({ current: "", next: "", confirm: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [updating, setUpdating] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = pwSchema.safeParse(data);
     if (!parsed.success) {
@@ -275,10 +276,13 @@ function ChangePasswordDialog({ open, onOpenChange }: { open: boolean; onOpenCha
       setErrors({ current: "Incorrect current password" });
       return;
     }
+    setUpdating(true);
+    await new Promise((r) => setTimeout(r, 400));
     usersStore.update(user!.id, { passwordHash: hashPassword(data.next) });
     toast.success("Password updated");
     setData({ current: "", next: "", confirm: "" });
     setErrors({});
+    setUpdating(false);
     onOpenChange(false);
   };
 
@@ -306,9 +310,9 @@ function ChangePasswordDialog({ open, onOpenChange }: { open: boolean; onOpenCha
             {errors.confirm && <p className="text-xs text-destructive">{errors.confirm}</p>}
           </div>
           <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-              Update password
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)} disabled={updating}>Cancel</Button>
+            <Button type="submit" disabled={updating} className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+              {updating ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Updating…</>) : "Update password"}
             </Button>
           </DialogFooter>
         </form>
