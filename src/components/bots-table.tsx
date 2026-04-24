@@ -59,6 +59,31 @@ function StatusBadge({ status }: { status: BotStatus }) {
   return <Badge className="border-0 bg-warning/20 text-warning-foreground hover:bg-warning/30">Blocked</Badge>;
 }
 
+function firstWords(text: string, n = 3): string {
+  if (!text) return "—";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= n) return words.join(" ");
+  return `${words.slice(0, n).join(" ")}…`;
+}
+
+function daysRemaining(expiryIso: string): number {
+  const ms = new Date(expiryIso).getTime() - Date.now();
+  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
+function DaysRemaining({ expiryIso }: { expiryIso: string }) {
+  const days = daysRemaining(expiryIso);
+  if (days < 0)
+    return <span className="text-destructive">Expired {Math.abs(days)}d ago</span>;
+  if (days === 0) return <span className="text-warning-foreground">Today</span>;
+  const tone = days <= 7 ? "text-warning-foreground" : "text-foreground";
+  return (
+    <span className={tone}>
+      {days} {days === 1 ? "day" : "days"}
+    </span>
+  );
+}
+
 export function BotsTable({
   ownerId,
   search,
