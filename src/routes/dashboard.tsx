@@ -87,7 +87,7 @@ function DashboardPage() {
             }}
             className="bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95"
           >
-            <Plus className="mr-1 h-5 w-5" /> Create New APPLICATION's Validity
+            <Plus className="mr-1 h-5 w-5" /> Create New APPLICATION Validity
           </Button>
         </motion.div>
 
