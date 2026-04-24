@@ -6,6 +6,7 @@ import { z } from "zod";
 import { AuthShell } from "@/components/auth-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Label } from "@/components/ui/label";
 import {
   InputOTP,
@@ -106,12 +107,12 @@ function RegisterPage() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Input id="password" type="password" value={data.password} onChange={(e) => setData({ ...data, password: e.target.value })} placeholder="At least 8 characters" />
+            <PasswordInput id="password" value={data.password} onChange={(e) => setData({ ...data, password: e.target.value })} placeholder="At least 8 characters" />
             {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor="confirm">Confirm password</Label>
-            <Input id="confirm" type="password" value={data.confirm} onChange={(e) => setData({ ...data, confirm: e.target.value })} />
+            <PasswordInput id="confirm" value={data.confirm} onChange={(e) => setData({ ...data, confirm: e.target.value })} />
             {errors.confirm && <p className="text-xs text-destructive">{errors.confirm}</p>}
           </div>
           <Button type="submit" className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">

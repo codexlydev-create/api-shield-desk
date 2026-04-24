@@ -59,6 +59,31 @@ function StatusBadge({ status }: { status: BotStatus }) {
   return <Badge className="border-0 bg-warning/20 text-warning-foreground hover:bg-warning/30">Blocked</Badge>;
 }
 
+function firstWords(text: string, n = 3): string {
+  if (!text) return "—";
+  const words = text.trim().split(/\s+/);
+  if (words.length <= n) return words.join(" ");
+  return `${words.slice(0, n).join(" ")}…`;
+}
+
+function daysRemaining(expiryIso: string): number {
+  const ms = new Date(expiryIso).getTime() - Date.now();
+  return Math.ceil(ms / (1000 * 60 * 60 * 24));
+}
+
+function DaysRemaining({ expiryIso }: { expiryIso: string }) {
+  const days = daysRemaining(expiryIso);
+  if (days < 0)
+    return <span className="text-destructive">Expired {Math.abs(days)}d ago</span>;
+  if (days === 0) return <span className="text-warning-foreground">Today</span>;
+  const tone = days <= 7 ? "text-warning-foreground" : "text-foreground";
+  return (
+    <span className={tone}>
+      {days} {days === 1 ? "day" : "days"}
+    </span>
+  );
+}
+
 export function BotsTable({
   ownerId,
   search,
@@ -137,9 +162,11 @@ export function BotsTable({
                 <thead>
                   <tr className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
                     <th className="px-4 py-3 font-medium">BOT Name</th>
+                    <th className="px-4 py-3 font-medium">Description</th>
                     <th className="px-4 py-3 font-medium">ID</th>
                     <th className="px-4 py-3 font-medium">API</th>
                     <th className="px-4 py-3 font-medium">Expiry</th>
+                    <th className="px-4 py-3 font-medium">Days Left</th>
                     <th className="px-4 py-3 font-medium">Status</th>
                     <th className="px-4 py-3 font-medium">Block</th>
                     <th className="px-4 py-3 text-right font-medium">Actions</th>
@@ -161,7 +188,16 @@ export function BotsTable({
                         >
                           <td className="px-4 py-3">
                             <div className="font-medium">{b.name}</div>
-                            <div className="line-clamp-1 text-xs text-muted-foreground">{b.description || "—"}</div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-muted-foreground">
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="cursor-default">{firstWords(b.description, 3)}</span>
+                              </TooltipTrigger>
+                              {b.description && b.description.trim().split(/\s+/).length > 3 && (
+                                <TooltipContent className="max-w-xs">{b.description}</TooltipContent>
+                              )}
+                            </Tooltip>
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
@@ -191,6 +227,9 @@ export function BotsTable({
                             </div>
                           </td>
                           <td className="px-4 py-3 text-muted-foreground">{formatDateTime(b.expiryDate)}</td>
+                          <td className="px-4 py-3 text-sm font-medium">
+                            <DaysRemaining expiryIso={b.expiryDate} />
+                          </td>
                           <td className="px-4 py-3">
                             <StatusBadge status={status} />
                           </td>
@@ -243,7 +282,7 @@ export function BotsTable({
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <div className="truncate font-semibold">{b.name}</div>
-                          <p className="line-clamp-2 text-xs text-muted-foreground">{b.description || "—"}</p>
+                          <p className="text-xs text-muted-foreground">{firstWords(b.description, 3)}</p>
                         </div>
                         <StatusBadge status={status} />
                       </div>
@@ -268,6 +307,10 @@ export function BotsTable({
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-muted-foreground">Expiry</span>
                           <span>{formatDateTime(b.expiryDate)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-muted-foreground">Days Left</span>
+                          <DaysRemaining expiryIso={b.expiryDate} />
                         </div>
                       </div>
 
