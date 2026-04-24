@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 import { AuthShell } from "@/components/auth-shell";
@@ -33,20 +34,25 @@ function ForgotPage() {
   const [otp, setOtp] = useState("");
   const [pw, setPw] = useState({ password: "", confirm: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [sending, setSending] = useState(false);
+  const [resetting, setResetting] = useState(false);
 
-  const sendOtp = (e: React.FormEvent) => {
+  const sendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const u = usersStore.byEmail(email);
     if (!u) {
       toast.error("No account with that email.");
       return;
     }
+    setSending(true);
+    await new Promise((r) => setTimeout(r, 400));
     const code = otpStore.generate(email, "reset");
     toast.success("Reset code sent (demo mode)", { description: `Your code: ${code}`, duration: 15000 });
+    setSending(false);
     setStep("reset");
   };
 
-  const reset = (e: React.FormEvent) => {
+  const reset = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = pwSchema.safeParse(pw);
     if (!parsed.success) {
@@ -55,8 +61,11 @@ function ForgotPage() {
       setErrors(map);
       return;
     }
+    setResetting(true);
+    await new Promise((r) => setTimeout(r, 400));
     const v = otpStore.verify(email, "reset", otp);
     if (!v.ok) {
+      setResetting(false);
       toast.error("Invalid or expired code");
       return;
     }
@@ -77,8 +86,8 @@ function ForgotPage() {
             <Label htmlFor="email">Email</Label>
             <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@gmail.com" required />
           </div>
-          <Button type="submit" className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-            Send reset code
+          <Button type="submit" disabled={sending} className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+            {sending ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sending code…</>) : "Send reset code"}
           </Button>
           <p className="text-center text-sm text-muted-foreground">
             <Link to="/login" className="font-medium text-primary hover:underline">Back to login</Link>
@@ -111,8 +120,8 @@ function ForgotPage() {
             <PasswordInput id="confirm" value={pw.confirm} onChange={(e) => setPw({ ...pw, confirm: e.target.value })} />
             {errors.confirm && <p className="text-xs text-destructive">{errors.confirm}</p>}
           </div>
-          <Button type="submit" className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
-            Reset password
+          <Button type="submit" disabled={resetting} className="w-full bg-gradient-sunset text-primary-foreground shadow-glow hover:opacity-95">
+            {resetting ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Resetting…</>) : "Reset password"}
           </Button>
         </form>
       )}
