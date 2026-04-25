@@ -336,6 +336,7 @@ export function BotsTable({
                     {filtered.map((b) => {
                       const status = getBotStatus(b);
                       const url = apiUrl(b);
+                      const preview = previewUrl(b);
                       return (
                         <motion.tr
                           key={b.id}
@@ -373,7 +374,7 @@ export function BotsTable({
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <a
-                                    href={url}
+                                    href={preview}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -381,7 +382,7 @@ export function BotsTable({
                                     <ExternalLink className="h-3.5 w-3.5" />
                                   </a>
                                 </TooltipTrigger>
-                                <TooltipContent>Open endpoint</TooltipContent>
+                                <TooltipContent>Open live preview</TooltipContent>
                               </Tooltip>
                             </div>
                           </td>
