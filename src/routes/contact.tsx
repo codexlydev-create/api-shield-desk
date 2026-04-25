@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { CodexlyFooter } from "@/components/codexly-footer";
+import { contactApi } from "@/lib/api";
 
 export const Route = createFileRoute("/contact")({
   head: () => ({
@@ -41,7 +42,7 @@ function ContactPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [sending, setSending] = useState(false);
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = schema.safeParse(data);
     if (!parsed.success) {
@@ -52,14 +53,18 @@ function ContactPage() {
     }
     setErrors({});
     setSending(true);
-    // Demo mode — no backend wired up.
-    setTimeout(() => {
-      setSending(false);
+    try {
+      await contactApi.send(parsed.data);
       setData({ name: "", email: "", message: "" });
-      toast.success("Message sent (demo)", {
+      toast.success("Message sent", {
         description: "Thanks for reaching out — we'll get back soon.",
       });
-    }, 600);
+    } catch (err) {
+      const message = (err as Error)?.message || "Failed to send message";
+      toast.error("Could not send message", { description: message });
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
