@@ -204,8 +204,11 @@ export function BotsTable({
   const API_BASE =
     (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
     (typeof window !== "undefined" ? window.location.origin : "");
-  // Public, unauthenticated endpoint — accessible from anywhere.
+  const APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+  // Public, unauthenticated raw JSON response — served by the backend API.
   const apiUrl = (b: Bot) => `${API_BASE}/api/public/applications/${b.id}`;
+  // Frontend preview page — formatted, live JSON preview UI.
+  const previewUrl = (b: Bot) => `${APP_ORIGIN}/api/public/applications/${b.id}/preview`;
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -333,6 +336,7 @@ export function BotsTable({
                     {filtered.map((b) => {
                       const status = getBotStatus(b);
                       const url = apiUrl(b);
+                      const preview = previewUrl(b);
                       return (
                         <motion.tr
                           key={b.id}
@@ -370,7 +374,7 @@ export function BotsTable({
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <a
-                                    href={url}
+                                    href={preview}
                                     target="_blank"
                                     rel="noreferrer"
                                     className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
@@ -378,7 +382,7 @@ export function BotsTable({
                                     <ExternalLink className="h-3.5 w-3.5" />
                                   </a>
                                 </TooltipTrigger>
-                                <TooltipContent>Open endpoint</TooltipContent>
+                                <TooltipContent>Open live preview</TooltipContent>
                               </Tooltip>
                             </div>
                           </td>

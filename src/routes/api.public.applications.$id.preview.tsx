@@ -6,11 +6,11 @@ import { publicApi, type PublicApplicationResponse } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export const Route = createFileRoute("/api/bot/$id")({
-  component: BotApiView,
+export const Route = createFileRoute("/api/public/applications/$id/preview")({
+  component: ApplicationPreviewPage,
 });
 
-function BotApiView() {
+function ApplicationPreviewPage() {
   const { id } = Route.useParams();
   const [payload, setPayload] = useState<PublicApplicationResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,10 +101,10 @@ function BotApiView() {
 
         <div className="mt-6">
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            <span className="text-gradient-sunset">APPLICATION</span> validity endpoint
+            <span className="text-gradient-sunset">APPLICATION</span> validity preview
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">GET /api/public/applications/{id}</code>
+            Raw JSON: <code className="rounded bg-muted px-2 py-0.5 font-mono text-xs">GET /api/public/applications/{id}</code>
           </p>
         </div>
 
@@ -182,7 +182,7 @@ function BotApiView() {
 
         {!loading && !notFound && (
           <p className="mt-4 text-xs text-muted-foreground">
-            Public endpoint — live response from the backend. Updates every second.
+            Live preview — synced with the backend every second.
             {payload && payload.status === "active" && (
               <span className="ml-1 inline-flex items-center gap-1">
                 <Loader2 className="h-3 w-3 animate-spin" /> syncing

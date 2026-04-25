@@ -17,7 +17,10 @@ router.post("/", async (req, res, next) => {
       return res.status(400).json({ error: parsed.error.issues[0]?.message || "Invalid input" });
     }
     const { name, email, message } = parsed.data;
-    const to = process.env.CONTACT_TO || process.env.GMAIL_USER;
+    const to =
+      process.env.CONTACT_TO ||
+      process.env.EMAIL_USER ||
+      process.env.GMAIL_USER;
     const safeMsg = message.replace(/</g, "&lt;").replace(/\n/g, "<br/>");
     await sendMail({
       to,

@@ -17,7 +17,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiBotIdRouteImport } from './routes/api.bot.$id'
+import { Route as ApiPublicApplicationsIdPreviewRouteImport } from './routes/api.public.applications.$id.preview'
 
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
@@ -59,11 +59,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiBotIdRoute = ApiBotIdRouteImport.update({
-  id: '/api/bot/$id',
-  path: '/api/bot/$id',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const ApiPublicApplicationsIdPreviewRoute =
+  ApiPublicApplicationsIdPreviewRouteImport.update({
+    id: '/api/public/applications/$id/preview',
+    path: '/api/public/applications/$id/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -74,7 +75,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
-  '/api/bot/$id': typeof ApiBotIdRoute
+  '/api/public/applications/$id/preview': typeof ApiPublicApplicationsIdPreviewRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -85,7 +86,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
-  '/api/bot/$id': typeof ApiBotIdRoute
+  '/api/public/applications/$id/preview': typeof ApiPublicApplicationsIdPreviewRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -97,7 +98,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
-  '/api/bot/$id': typeof ApiBotIdRoute
+  '/api/public/applications/$id/preview': typeof ApiPublicApplicationsIdPreviewRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -110,7 +111,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/register'
-    | '/api/bot/$id'
+    | '/api/public/applications/$id/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -121,7 +122,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/register'
-    | '/api/bot/$id'
+    | '/api/public/applications/$id/preview'
   id:
     | '__root__'
     | '/'
@@ -132,7 +133,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/register'
-    | '/api/bot/$id'
+    | '/api/public/applications/$id/preview'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -144,7 +145,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
-  ApiBotIdRoute: typeof ApiBotIdRoute
+  ApiPublicApplicationsIdPreviewRoute: typeof ApiPublicApplicationsIdPreviewRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -205,11 +206,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/bot/$id': {
-      id: '/api/bot/$id'
-      path: '/api/bot/$id'
-      fullPath: '/api/bot/$id'
-      preLoaderRoute: typeof ApiBotIdRouteImport
+    '/api/public/applications/$id/preview': {
+      id: '/api/public/applications/$id/preview'
+      path: '/api/public/applications/$id/preview'
+      fullPath: '/api/public/applications/$id/preview'
+      preLoaderRoute: typeof ApiPublicApplicationsIdPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -224,7 +225,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
-  ApiBotIdRoute: ApiBotIdRoute,
+  ApiPublicApplicationsIdPreviewRoute: ApiPublicApplicationsIdPreviewRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
