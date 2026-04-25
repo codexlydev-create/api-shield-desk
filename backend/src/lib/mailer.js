@@ -1,12 +1,17 @@
 const nodemailer = require("nodemailer");
 
-const GMAIL_USER = process.env.GMAIL_USER;
-const GMAIL_APP_PASSWORD = (process.env.GMAIL_APP_PASSWORD || "").replace(/\s+/g, "");
+// Support both EMAIL_* (preferred) and GMAIL_* (legacy) variable names.
+const GMAIL_USER = process.env.EMAIL_USER || process.env.GMAIL_USER;
+const GMAIL_APP_PASSWORD = (
+  process.env.EMAIL_APP_PASSWORD || process.env.GMAIL_APP_PASSWORD || ""
+).replace(/\s+/g, "");
 
 let transporter = null;
 function getTransporter() {
   if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
-    throw new Error("GMAIL_USER and GMAIL_APP_PASSWORD must be set in backend/.env");
+    throw new Error(
+      "EMAIL_USER and EMAIL_APP_PASSWORD must be set in backend/.env (Gmail App Password required)",
+    );
   }
   if (!transporter) {
     transporter = nodemailer.createTransport({
