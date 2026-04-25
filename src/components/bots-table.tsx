@@ -428,9 +428,10 @@ export function BotsTable({
             {/* Mobile cards */}
             <div className="space-y-3 p-3 md:hidden">
               <AnimatePresence initial={false}>
-                {filtered.map((b) => {
+              {filtered.map((b) => {
                   const status = getBotStatus(b);
                   const url = apiUrl(b);
+                  const preview = previewUrl(b);
                   return (
                     <motion.div
                       key={b.id}
