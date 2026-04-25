@@ -428,9 +428,10 @@ export function BotsTable({
             {/* Mobile cards */}
             <div className="space-y-3 p-3 md:hidden">
               <AnimatePresence initial={false}>
-                {filtered.map((b) => {
+              {filtered.map((b) => {
                   const status = getBotStatus(b);
                   const url = apiUrl(b);
+                  const preview = previewUrl(b);
                   return (
                     <motion.div
                       key={b.id}
@@ -462,6 +463,20 @@ export function BotsTable({
                               {url.slice(0, 14)}…
                             </code>
                             <CopyBtn value={url} label="API URL" />
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a
+                                  href={preview}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                                  aria-label="Open live preview"
+                                >
+                                  <ExternalLink className="h-3.5 w-3.5" />
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>Open live preview</TooltipContent>
+                            </Tooltip>
                           </div>
                         </div>
                         <div className="flex items-center justify-between gap-2">
