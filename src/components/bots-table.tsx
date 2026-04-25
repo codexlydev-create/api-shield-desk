@@ -204,8 +204,11 @@ export function BotsTable({
   const API_BASE =
     (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
     (typeof window !== "undefined" ? window.location.origin : "");
-  // Public, unauthenticated endpoint — accessible from anywhere.
+  const APP_ORIGIN = typeof window !== "undefined" ? window.location.origin : "";
+  // Public, unauthenticated raw JSON response — served by the backend API.
   const apiUrl = (b: Bot) => `${API_BASE}/api/public/applications/${b.id}`;
+  // Frontend preview page — formatted, live JSON preview UI.
+  const previewUrl = (b: Bot) => `${APP_ORIGIN}/api/public/applications/${b.id}/preview`;
 
   return (
     <TooltipProvider delayDuration={150}>
