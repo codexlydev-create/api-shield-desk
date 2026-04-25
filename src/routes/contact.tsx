@@ -161,7 +161,7 @@ function ContactPage() {
             </div>
             <div className="mt-5 flex items-center justify-between gap-3">
               <p className="text-xs text-muted-foreground">
-                Demo mode — submissions are not stored.
+                We typically reply within 1 business day.
               </p>
               <Button
                 type="submit"
