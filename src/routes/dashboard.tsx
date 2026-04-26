@@ -20,7 +20,7 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Bot | null>(null);
@@ -30,8 +30,16 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for the auth context to finish hydrating before deciding anything.
+    // On a hard refresh, `user` is briefly null while /me is in-flight — we
+    // must NOT redirect to /login during that window or the dashboard will
+    // appear to "log out" on every refresh.
+    if (authLoading) return;
     if (!user) {
-      navigate({ to: "/login" });
+      // Only redirect if there is also no token. If a token exists but the
+      // /me call failed transiently (e.g. cold-start 503), keep the user here
+      // and let auth-context retry rather than bouncing them to login.
+      if (!sessionStore.get()) navigate({ to: "/login" });
       return;
     }
     const refresh = () => setBots(botsStore.byOwner(user.id));
@@ -48,7 +56,24 @@ function DashboardPage() {
       clearInterval(interval);
       clearTimeout(loadTimer);
     };
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
+
+  // While auth is hydrating after a hard refresh, render skeletons instead
+  // of nothing so the page doesn't flicker to login.
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-[88px] rounded-xl" />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const stats = useMemo(() => {
     let active = 0, expired = 0, blocked = 0;
