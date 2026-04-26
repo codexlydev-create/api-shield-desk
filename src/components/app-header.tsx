@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Bot, LayoutDashboard, LogOut, User as UserIcon } from "lucide-react";
+import { LayoutDashboard, LogOut, User as UserIcon } from "lucide-react";
+import logoUrl from "@/assets/logo.png";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,9 +27,7 @@ export function AppHeader() {
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
         <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-sunset shadow-glow transition-transform group-hover:scale-110">
-            <Bot className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img src={logoUrl} alt="APPLICATION Validity logo" className="h-9 w-9 rounded-lg shadow-glow transition-transform group-hover:scale-110" />
           <span className="text-lg font-bold tracking-tight">
             <span className="text-gradient-sunset">APPLICATION</span> Validity
           </span>
