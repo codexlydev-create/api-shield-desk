@@ -6,18 +6,14 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// Build a static SPA bundle so the frontend can be hosted on any static host
-// (Surge, Netlify, GitHub Pages, Nginx, etc.) while the Express backend in
-// /backend runs separately.
+// Build a static SPA bundle for Surge / Netlify / any static host.
+// The Express backend in /backend is deployed separately (e.g. Vercel).
 //
-// Output layout after `bun run build`:
-//   dist/index.html          ← entry HTML (also copy to 200.html for SPA fallback)
-//   dist/assets/*            ← hashed JS/CSS bundles
-//   dist/favicon.png         ← static files from /public
-//
-// `cloudflare: false` disables the Worker SSR build.
-// `tanstackStart.spa.enabled` makes TanStack Start emit a single index.html
-// that hydrates client-side, with a wildcard fallback so deep links work.
+// Output (after `bun run build`):
+//   dist/index.html      ← entry HTML
+//   dist/200.html        ← SPA fallback (Surge), copied by the postbuild script
+//   dist/assets/*        ← hashed JS/CSS bundles
+//   dist/favicon.png     ← static files from /public
 export default defineConfig({
   cloudflare: false,
   tanstackStart: {
@@ -30,6 +26,7 @@ export default defineConfig({
     pages: [],
   },
   vite: {
+    base: "/",
     environments: {
       client: {
         build: {
