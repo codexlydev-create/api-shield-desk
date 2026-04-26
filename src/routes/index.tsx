@@ -1,6 +1,7 @@
 import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { ArrowRight, Bot, KeyRound, ShieldCheck, Zap } from "lucide-react";
+import { ArrowRight, KeyRound, ShieldCheck, Zap } from "lucide-react";
+import logoUrl from "@/assets/logo.png";
 import { tokenStore } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { CodexlyFooter } from "@/components/codexly-footer";
@@ -21,9 +22,7 @@ function Landing() {
 
       <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-4 py-5 sm:px-6">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-sunset shadow-glow">
-            <Bot className="h-5 w-5 text-primary-foreground" />
-          </div>
+          <img src={logoUrl} alt="APPLICATION Validity logo" className="h-9 w-9 rounded-lg shadow-glow" />
           <span className="text-lg font-bold">
             <span className="text-gradient-sunset">APPLICATION</span> Validity
           </span>
