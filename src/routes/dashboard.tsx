@@ -56,7 +56,24 @@ function DashboardPage() {
       clearInterval(interval);
       clearTimeout(loadTimer);
     };
-  }, [user, navigate]);
+  }, [user, authLoading, navigate]);
+
+  // While auth is hydrating after a hard refresh, render skeletons instead
+  // of nothing so the page doesn't flicker to login.
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <AppHeader />
+        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-[88px] rounded-xl" />
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   const stats = useMemo(() => {
     let active = 0, expired = 0, blocked = 0;
