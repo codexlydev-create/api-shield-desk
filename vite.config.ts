@@ -5,6 +5,8 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import fs from "node:fs";
+import path from "node:path";
 
 // Build a static SPA bundle so the frontend can be hosted on Surge / Netlify /
 // any static host while the Express backend in /backend runs separately
@@ -45,10 +47,6 @@ export default defineConfig({
         apply: "build",
         closeBundle() {
           try {
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const fs = require("node:fs");
-            // eslint-disable-next-line @typescript-eslint/no-require-imports
-            const path = require("node:path");
             const src = path.resolve("dist/index.html");
             const dest = path.resolve("dist/200.html");
             if (fs.existsSync(src)) {
