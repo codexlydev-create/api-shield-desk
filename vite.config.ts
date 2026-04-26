@@ -6,18 +6,18 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// Build a static SPA bundle so the frontend can be hosted on any static host
-// (Surge, Netlify, GitHub Pages, Nginx, etc.) while the Express backend in
-// /backend runs separately.
+// Build a static SPA bundle so the frontend can be hosted on Surge / Netlify /
+// any static host while the Express backend in /backend runs separately
+// (e.g. on Vercel as a serverless function).
 //
 // Output layout after `bun run build`:
-//   dist/index.html          ← entry HTML (also copy to 200.html for SPA fallback)
+//   dist/index.html          ← entry HTML (also copied to 200.html for SPA fallback)
 //   dist/assets/*            ← hashed JS/CSS bundles
 //   dist/favicon.png         ← static files from /public
 //
-// `cloudflare: false` disables the Worker SSR build.
-// `tanstackStart.spa.enabled` makes TanStack Start emit a single index.html
-// that hydrates client-side, with a wildcard fallback so deep links work.
+// Surge requires a 200.html file as the SPA fallback so deep links like
+// /dashboard reload correctly. The post-build hook below copies index.html
+// to 200.html automatically.
 export default defineConfig({
   cloudflare: false,
   tanstackStart: {
@@ -30,6 +30,7 @@ export default defineConfig({
     pages: [],
   },
   vite: {
+    base: "/",
     environments: {
       client: {
         build: {
@@ -38,5 +39,27 @@ export default defineConfig({
         },
       },
     },
+    plugins: [
+      {
+        name: "surge-spa-fallback",
+        apply: "build",
+        closeBundle() {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const fs = require("node:fs");
+            // eslint-disable-next-line @typescript-eslint/no-require-imports
+            const path = require("node:path");
+            const src = path.resolve("dist/index.html");
+            const dest = path.resolve("dist/200.html");
+            if (fs.existsSync(src)) {
+              fs.copyFileSync(src, dest);
+              console.log("[surge-spa-fallback] dist/200.html written");
+            }
+          } catch (e) {
+            console.warn("[surge-spa-fallback] skipped:", e);
+          }
+        },
+      },
+    ],
   },
 });
