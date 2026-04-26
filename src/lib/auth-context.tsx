@@ -27,9 +27,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await authApi.me();
       setUser(res.user);
-    } catch {
-      tokenStore.clear();
-      setUser(null);
+    } catch (err) {
+      // Only log out on real auth failures (401). Transient errors like a
+      // serverless DB cold-start (503) or network blips must NOT wipe the
+      // session — keep the token and let the next request retry.
+      const status = (err as { status?: number })?.status;
+      if (status === 401 || status === 403) {
+        tokenStore.clear();
+        setUser(null);
+      }
     } finally {
       setLoading(false);
     }

@@ -14,8 +14,26 @@ async function requireAuth(req, res, next) {
     const header = req.headers.authorization || "";
     const token = header.startsWith("Bearer ") ? header.slice(7) : null;
     if (!token) return res.status(401).json({ error: "Missing token" });
-    const payload = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(payload.sub);
+
+    let payload;
+    try {
+      payload = jwt.verify(token, JWT_SECRET);
+    } catch {
+      return res.status(401).json({ error: "Invalid or expired token" });
+    }
+
+    let user;
+    try {
+      user = await User.findById(payload.sub);
+    } catch (dbErr) {
+      // DB unavailable / timeout — return 503 (transient) so the client
+      // does NOT clear the auth token and log the user out.
+      console.error("[auth] user lookup failed:", dbErr.message);
+      return res
+        .status(503)
+        .json({ error: "Database temporarily unavailable. Please try again." });
+    }
+
     if (!user) return res.status(401).json({ error: "Invalid token" });
     req.user = user;
     next();
