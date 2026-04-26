@@ -58,6 +58,17 @@ function DashboardPage() {
     };
   }, [user, authLoading, navigate]);
 
+  const stats = useMemo(() => {
+    let active = 0, expired = 0, blocked = 0;
+    bots.forEach((b) => {
+      const s = getBotStatus(b);
+      if (s === "active") active++;
+      else if (s === "expired") expired++;
+      else blocked++;
+    });
+    return { total: bots.length, active, expired, blocked };
+  }, [bots]);
+
   // While auth is hydrating after a hard refresh, render skeletons instead
   // of nothing so the page doesn't flicker to login.
   if (authLoading) {
@@ -74,17 +85,6 @@ function DashboardPage() {
       </div>
     );
   }
-
-  const stats = useMemo(() => {
-    let active = 0, expired = 0, blocked = 0;
-    bots.forEach((b) => {
-      const s = getBotStatus(b);
-      if (s === "active") active++;
-      else if (s === "expired") expired++;
-      else blocked++;
-    });
-    return { total: bots.length, active, expired, blocked };
-  }, [bots]);
 
   if (!user) return null;
 
