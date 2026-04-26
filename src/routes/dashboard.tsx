@@ -20,7 +20,7 @@ export const Route = createFileRoute("/dashboard")({
 });
 
 function DashboardPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Bot | null>(null);
@@ -30,8 +30,16 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Wait for the auth context to finish hydrating before deciding anything.
+    // On a hard refresh, `user` is briefly null while /me is in-flight — we
+    // must NOT redirect to /login during that window or the dashboard will
+    // appear to "log out" on every refresh.
+    if (authLoading) return;
     if (!user) {
-      navigate({ to: "/login" });
+      // Only redirect if there is also no token. If a token exists but the
+      // /me call failed transiently (e.g. cold-start 503), keep the user here
+      // and let auth-context retry rather than bouncing them to login.
+      if (!sessionStore.get()) navigate({ to: "/login" });
       return;
     }
     const refresh = () => setBots(botsStore.byOwner(user.id));
