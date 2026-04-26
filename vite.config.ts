@@ -5,21 +5,15 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-import fs from "node:fs";
-import path from "node:path";
 
-// Build a static SPA bundle so the frontend can be hosted on Surge / Netlify /
-// any static host while the Express backend in /backend runs separately
-// (e.g. on Vercel as a serverless function).
+// Build a static SPA bundle for Surge / Netlify / any static host.
+// The Express backend in /backend is deployed separately (e.g. Vercel).
 //
-// Output layout after `bun run build`:
-//   dist/index.html          ← entry HTML (also copied to 200.html for SPA fallback)
-//   dist/assets/*            ← hashed JS/CSS bundles
-//   dist/favicon.png         ← static files from /public
-//
-// Surge requires a 200.html file as the SPA fallback so deep links like
-// /dashboard reload correctly. The post-build hook below copies index.html
-// to 200.html automatically.
+// Output (after `bun run build`):
+//   dist/index.html      ← entry HTML
+//   dist/200.html        ← SPA fallback (Surge), copied by the postbuild script
+//   dist/assets/*        ← hashed JS/CSS bundles
+//   dist/favicon.png     ← static files from /public
 export default defineConfig({
   cloudflare: false,
   tanstackStart: {
@@ -41,23 +35,5 @@ export default defineConfig({
         },
       },
     },
-    plugins: [
-      {
-        name: "surge-spa-fallback",
-        apply: "build",
-        closeBundle() {
-          try {
-            const src = path.resolve("dist/index.html");
-            const dest = path.resolve("dist/200.html");
-            if (fs.existsSync(src)) {
-              fs.copyFileSync(src, dest);
-              console.log("[surge-spa-fallback] dist/200.html written");
-            }
-          } catch (e) {
-            console.warn("[surge-spa-fallback] skipped:", e);
-          }
-        },
-      },
-    ],
   },
 });
