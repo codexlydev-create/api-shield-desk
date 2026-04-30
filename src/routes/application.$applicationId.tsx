@@ -515,6 +515,15 @@ function ApplicationDetailsPage() {
                                   >
                                     <X className="h-3.5 w-3.5" /> Reject
                                   </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setDeleteTarget(d)}
+                                    className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                    aria-label="Delete device"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                                  </Button>
                                 </>
                               ) : (
                                 <span className="text-xs text-muted-foreground">
