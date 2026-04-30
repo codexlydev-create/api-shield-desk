@@ -161,6 +161,23 @@ function ApplicationDetailsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Device | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const apiBase =
+    (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
+    "http://localhost:4000";
+  const postUrl = `${apiBase}/api/public/applications/${applicationId}/device`;
+  const getUrl = `${apiBase}/api/public/applications/${applicationId}/deviceAccess`;
+  const postBody = JSON.stringify(
+    { deviceName: "DESKTOP-ABC123", deviceSecret: "9f1c2e7a8b3d", status: "pending" },
+    null,
+    2,
+  );
+  const curlPost = `curl -X POST "${postUrl}" \\
+  -H "Content-Type: application/json" \\
+  -d '${postBody.replace(/\n/g, " ").replace(/\s+/g, " ")}'`;
+  const curlGet = `curl "${getUrl}"`;
 
   const loadApp = useCallback(async () => {
     setAppLoading(true);
