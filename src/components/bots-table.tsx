@@ -449,7 +449,13 @@ export function BotsTable({
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="truncate font-semibold">{b.name}</div>
+                          <Link
+                            to="/application/$applicationId"
+                            params={{ applicationId: b.id }}
+                            className="block truncate font-semibold underline-offset-4 hover:text-primary hover:underline"
+                          >
+                            {b.name}
+                          </Link>
                           <p className="text-xs text-muted-foreground">{truncateChars(b.description, 15)}</p>
                         </div>
                         <StatusBadge status={status} />
