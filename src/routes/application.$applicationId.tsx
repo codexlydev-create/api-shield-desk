@@ -8,6 +8,7 @@ import {
   Loader2,
   RefreshCw,
   ShieldCheck,
+  Trash2,
   X,
   Clock,
 } from "lucide-react";
@@ -26,6 +27,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { sessionStore } from "@/lib/storage";
 import { useAuth } from "@/lib/auth-context";
 import {
