@@ -96,7 +96,39 @@ function CopyInline({ value }: { value: string }) {
           setTimeout(() => setCopied(false), 1200);
         } catch {
           toast.error("Copy failed");
-        }
+}
+
+function CopyBlock({ value, language = "text" }: { value: string; language?: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="relative">
+      <pre className="overflow-x-auto rounded-md border border-border/60 bg-muted/40 p-3 pr-12 font-mono text-xs leading-relaxed">
+        <code data-lang={language}>{value}</code>
+      </pre>
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(value);
+            setCopied(true);
+            toast.success("Copied");
+            setTimeout(() => setCopied(false), 1200);
+          } catch {
+            toast.error("Copy failed");
+          }
+        }}
+        className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md bg-background/80 text-muted-foreground shadow-sm transition-colors hover:bg-background hover:text-foreground"
+        aria-label="Copy"
+      >
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-success" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
+      </button>
+    </div>
+  );
+}
       }}
       className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       aria-label="Copy"
