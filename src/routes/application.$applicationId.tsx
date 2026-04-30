@@ -96,6 +96,18 @@ function CopyInline({ value }: { value: string }) {
           setTimeout(() => setCopied(false), 1200);
         } catch {
           toast.error("Copy failed");
+        }
+      }}
+      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+      aria-label="Copy"
+    >
+      {copied ? (
+        <Check className="h-3.5 w-3.5 text-success" />
+      ) : (
+        <Copy className="h-3.5 w-3.5" />
+      )}
+    </button>
+  );
 }
 
 function CopyBlock({ value, language = "text" }: { value: string; language?: string }) {
@@ -127,18 +139,6 @@ function CopyBlock({ value, language = "text" }: { value: string; language?: str
         )}
       </button>
     </div>
-  );
-}
-      }}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-      aria-label="Copy"
-    >
-      {copied ? (
-        <Check className="h-3.5 w-3.5 text-success" />
-      ) : (
-        <Copy className="h-3.5 w-3.5" />
-      )}
-    </button>
   );
 }
 
