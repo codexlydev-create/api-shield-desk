@@ -117,6 +117,55 @@ export const applicationsApi = {
     request<{ ok: true }>(`/api/applications/${id}`, { method: "DELETE", auth: true }),
 };
 
+// ---------- Devices ----------
+export type DeviceStatus = "pending" | "approved" | "rejected";
+export type Device = {
+  id: string;
+  applicationId: string;
+  deviceName: string;
+  deviceSecret: string;
+  status: DeviceStatus;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export const devicesApi = {
+  // Public — anyone with the app id can register a device.
+  register: (
+    applicationId: string,
+    input: { deviceName: string; deviceSecret: string },
+  ) =>
+    request<{ device: Device }>(
+      `/api/public/applications/${applicationId}/device`,
+      { method: "POST", body: { ...input, status: "pending" } },
+    ),
+  // Public — list all device requests for an application.
+  listPublic: (applicationId: string) =>
+    request<{ devices: Device[] }>(
+      `/api/public/applications/${applicationId}/deviceAccess`,
+    ),
+  // Owner-only — list devices for an owned application.
+  listOwned: (applicationId: string) =>
+    request<{ devices: Device[] }>(`/api/applications/${applicationId}/devices`, {
+      auth: true,
+    }),
+  // Owner-only — approve / reject / reset a device.
+  updateStatus: (
+    applicationId: string,
+    deviceId: string,
+    status: DeviceStatus,
+  ) =>
+    request<{ device: Device }>(
+      `/api/applications/${applicationId}/devices/${deviceId}`,
+      { method: "PATCH", body: { status }, auth: true },
+    ),
+  remove: (applicationId: string, deviceId: string) =>
+    request<{ ok: true }>(`/api/applications/${applicationId}/devices/${deviceId}`, {
+      method: "DELETE",
+      auth: true,
+    }),
+};
+
 // ---------- Public ----------
 export type PublicApplicationResponse = {
   id: string;

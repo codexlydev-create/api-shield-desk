@@ -12,6 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { NotificationBell } from "@/components/notification-bell";
 
 export function AppHeader() {
   const { user, logout } = useAuth();
@@ -46,36 +47,39 @@ export function AppHeader() {
           </Link>
         </nav>
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 rounded-full bg-muted/60 px-2 py-1.5 transition-colors hover:bg-muted">
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-sunset text-xs font-bold text-primary-foreground">
-                {user?.name?.[0]?.toUpperCase() ?? "U"}
-              </div>
-              <span className="hidden text-sm font-medium sm:inline">{user?.name}</span>
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel className="truncate">{user?.email}</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => navigate({ to: "/dashboard" })}>
-              <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
-            </DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => navigate({ to: "/profile" })}>
-              <UserIcon className="mr-2 h-4 w-4" /> Profile
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onSelect={() => {
-                logout();
-                navigate({ to: "/login" });
-              }}
-              className="text-destructive focus:text-destructive"
-            >
-              <LogOut className="mr-2 h-4 w-4" /> Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-1">
+          <NotificationBell enabled={!!user} />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="flex items-center gap-2 rounded-full bg-muted/60 px-2 py-1.5 transition-colors hover:bg-muted">
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-sunset text-xs font-bold text-primary-foreground">
+                  {user?.name?.[0]?.toUpperCase() ?? "U"}
+                </div>
+                <span className="hidden text-sm font-medium sm:inline">{user?.name}</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel className="truncate">{user?.email}</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => navigate({ to: "/dashboard" })}>
+                <LayoutDashboard className="mr-2 h-4 w-4" /> Dashboard
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => navigate({ to: "/profile" })}>
+                <UserIcon className="mr-2 h-4 w-4" /> Profile
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onSelect={() => {
+                  logout();
+                  navigate({ to: "/login" });
+                }}
+                className="text-destructive focus:text-destructive"
+              >
+                <LogOut className="mr-2 h-4 w-4" /> Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </motion.header>
   );

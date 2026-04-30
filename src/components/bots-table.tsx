@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Link } from "@tanstack/react-router";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, Copy, Edit2, ExternalLink, Filter, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -347,7 +348,13 @@ export function BotsTable({
                           className="border-b border-border/40 last:border-0 hover:bg-muted/30"
                         >
                           <td className="px-4 py-3">
-                            <div className="font-medium">{b.name}</div>
+                            <Link
+                              to="/application/$applicationId"
+                              params={{ applicationId: b.id }}
+                              className="font-medium text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+                            >
+                              {b.name}
+                            </Link>
                           </td>
                           <td className="px-4 py-3 text-sm text-muted-foreground">
                             <Tooltip>
@@ -442,7 +449,13 @@ export function BotsTable({
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <div className="truncate font-semibold">{b.name}</div>
+                          <Link
+                            to="/application/$applicationId"
+                            params={{ applicationId: b.id }}
+                            className="block truncate font-semibold underline-offset-4 hover:text-primary hover:underline"
+                          >
+                            {b.name}
+                          </Link>
                           <p className="text-xs text-muted-foreground">{truncateChars(b.description, 15)}</p>
                         </div>
                         <StatusBadge status={status} />
