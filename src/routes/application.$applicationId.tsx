@@ -549,7 +549,138 @@ function ApplicationDetailsPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.15 }}
+          className="mt-6"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Public API reference</CardTitle>
+              <CardDescription>
+                Use these endpoints from any device or backend. No authentication required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* POST */}
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-primary/15 text-primary">POST</Badge>
+                  <span className="text-sm font-medium">Register a device</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Send a JSON body with <code className="rounded bg-muted px-1">deviceName</code>,{" "}
+                  <code className="rounded bg-muted px-1">deviceSecret</code> and{" "}
+                  <code className="rounded bg-muted px-1">status</code>. The server always
+                  stores new devices as <strong>pending</strong> regardless of the value sent.
+                </p>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Endpoint
+                  </Label>
+                  <CopyBlock value={postUrl} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Request body
+                  </Label>
+                  <CopyBlock value={postBody} language="json" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    cURL example
+                  </Label>
+                  <CopyBlock value={curlPost} language="bash" />
+                </div>
+              </div>
+
+              {/* GET */}
+              <div className="space-y-2 border-t border-border/60 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-success/15 text-success">GET</Badge>
+                  <span className="text-sm font-medium">List device access requests</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Returns every device registered against this application with its current{" "}
+                  <code className="rounded bg-muted px-1">status</code> (
+                  <em>pending | approved | rejected</em>).
+                </p>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Endpoint
+                  </Label>
+                  <CopyBlock value={getUrl} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    cURL example
+                  </Label>
+                  <CopyBlock value={curlGet} language="bash" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Example response
+                  </Label>
+                  <CopyBlock
+                    language="json"
+                    value={`{
+  "devices": [
+    {
+      "id": "...",
+      "applicationId": "${applicationId}",
+      "deviceName": "DESKTOP-ABC123",
+      "deviceSecret": "9f1c2e7a8b3d",
+      "status": "pending",
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ]
+}`}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </main>
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete device request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove{" "}
+              <strong className="text-foreground">{deleteTarget?.deviceName}</strong> from this
+              application. The device will need to register again to regain access. This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting…
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
