@@ -58,4 +58,45 @@ router.get("/applications/:id", async (req, res, next) => {
   }
 });
 
+// --- Public device registration ---
+const registerSchema = z.object({
+  deviceName: z.string().trim().min(1).max(120),
+  deviceSecret: z.string().trim().min(1).max(200),
+  // status is always forced to "pending" — we accept it from the body for
+  // API symmetry but ignore any other value.
+  status: z.string().optional(),
+});
+router.post("/applications/:id/device", async (req, res, next) => {
+  try {
+    const parsed = registerSchema.safeParse(req.body);
+    if (!parsed.success) return badRequest(res, parsed.error);
+    const app = await Application.findOne({ publicId: req.params.id });
+    if (!app) return res.status(404).json({ error: "Application not found" });
+
+    const device = await Device.create({
+      applicationId: app._id,
+      applicationPublicId: app.publicId,
+      deviceName: parsed.data.deviceName,
+      deviceSecret: parsed.data.deviceSecret,
+      status: "pending",
+    });
+    res.status(201).json({ device: device.toClientJSON() });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// --- Public read of all device requests for an application ---
+router.get("/applications/:id/deviceAccess", async (req, res, next) => {
+  try {
+    const app = await Application.findOne({ publicId: req.params.id });
+    if (!app) return res.status(404).json({ error: "Application not found" });
+    const devices = await Device.find({ applicationId: app._id }).sort({ createdAt: -1 });
+    res.json({ devices: devices.map((d) => d.toClientJSON()) });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;
+
