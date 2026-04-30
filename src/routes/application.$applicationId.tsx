@@ -261,6 +261,21 @@ function ApplicationDetailsPage() {
     }
   };
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await devicesApi.remove(applicationId, deleteTarget.id);
+      setDevices((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+      toast.success("Device deleted");
+      setDeleteTarget(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
