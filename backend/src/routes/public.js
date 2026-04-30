@@ -1,7 +1,15 @@
 const express = require("express");
+const { z } = require("zod");
 const Application = require("../models/Application");
+const Device = require("../models/Device");
 
 const router = express.Router();
+
+function badRequest(res, err) {
+  return res
+    .status(400)
+    .json({ error: err.issues?.[0]?.message || err.message || "Invalid input" });
+}
 
 function computeStatus(app) {
   if (app.blocked) return "blocked";
