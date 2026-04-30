@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { Link } from "@tanstack/react-router";
 import { ArrowDownWideNarrow, ArrowUpNarrowWide, Check, Copy, Edit2, ExternalLink, Filter, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import {

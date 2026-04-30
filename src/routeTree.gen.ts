@@ -17,6 +17,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApplicationApplicationIdRouteImport } from './routes/application.$applicationId'
 import { Route as ApiPublicApplicationsIdPreviewRouteImport } from './routes/api.public.applications.$id.preview'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -59,6 +60,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApplicationApplicationIdRoute =
+  ApplicationApplicationIdRouteImport.update({
+    id: '/application/$applicationId',
+    path: '/application/$applicationId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicApplicationsIdPreviewRoute =
   ApiPublicApplicationsIdPreviewRouteImport.update({
     id: '/api/public/applications/$id/preview',
@@ -75,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/application/$applicationId': typeof ApplicationApplicationIdRoute
   '/api/public/applications/$id/preview': typeof ApiPublicApplicationsIdPreviewRoute
 }
 export interface FileRoutesByTo {
@@ -86,6 +94,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/application/$applicationId': typeof ApplicationApplicationIdRoute
   '/api/public/applications/$id/preview': typeof ApiPublicApplicationsIdPreviewRoute
 }
 export interface FileRoutesById {
@@ -98,6 +107,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
+  '/application/$applicationId': typeof ApplicationApplicationIdRoute
   '/api/public/applications/$id/preview': typeof ApiPublicApplicationsIdPreviewRoute
 }
 export interface FileRouteTypes {
@@ -111,6 +121,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/register'
+    | '/application/$applicationId'
     | '/api/public/applications/$id/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -122,6 +133,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/register'
+    | '/application/$applicationId'
     | '/api/public/applications/$id/preview'
   id:
     | '__root__'
@@ -133,6 +145,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/profile'
     | '/register'
+    | '/application/$applicationId'
     | '/api/public/applications/$id/preview'
   fileRoutesById: FileRoutesById
 }
@@ -145,6 +158,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
+  ApplicationApplicationIdRoute: typeof ApplicationApplicationIdRoute
   ApiPublicApplicationsIdPreviewRoute: typeof ApiPublicApplicationsIdPreviewRoute
 }
 
@@ -206,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/application/$applicationId': {
+      id: '/application/$applicationId'
+      path: '/application/$applicationId'
+      fullPath: '/application/$applicationId'
+      preLoaderRoute: typeof ApplicationApplicationIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/applications/$id/preview': {
       id: '/api/public/applications/$id/preview'
       path: '/api/public/applications/$id/preview'
@@ -225,6 +246,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
+  ApplicationApplicationIdRoute: ApplicationApplicationIdRoute,
   ApiPublicApplicationsIdPreviewRoute: ApiPublicApplicationsIdPreviewRoute,
 }
 export const routeTree = rootRouteImport
