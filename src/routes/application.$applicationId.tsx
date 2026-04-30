@@ -8,6 +8,7 @@ import {
   Loader2,
   RefreshCw,
   ShieldCheck,
+  Trash2,
   X,
   Clock,
 } from "lucide-react";
@@ -26,6 +27,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { sessionStore } from "@/lib/storage";
 import { useAuth } from "@/lib/auth-context";
 import {
@@ -99,6 +110,38 @@ function CopyInline({ value }: { value: string }) {
   );
 }
 
+function CopyBlock({ value, language = "text" }: { value: string; language?: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="relative">
+      <pre className="overflow-x-auto rounded-md border border-border/60 bg-muted/40 p-3 pr-12 font-mono text-xs leading-relaxed">
+        <code data-lang={language}>{value}</code>
+      </pre>
+      <button
+        type="button"
+        onClick={async () => {
+          try {
+            await navigator.clipboard.writeText(value);
+            setCopied(true);
+            toast.success("Copied");
+            setTimeout(() => setCopied(false), 1200);
+          } catch {
+            toast.error("Copy failed");
+          }
+        }}
+        className="absolute right-2 top-2 inline-flex h-7 w-7 items-center justify-center rounded-md bg-background/80 text-muted-foreground shadow-sm transition-colors hover:bg-background hover:text-foreground"
+        aria-label="Copy"
+      >
+        {copied ? (
+          <Check className="h-3.5 w-3.5 text-success" />
+        ) : (
+          <Copy className="h-3.5 w-3.5" />
+        )}
+      </button>
+    </div>
+  );
+}
+
 function ApplicationDetailsPage() {
   const { applicationId } = Route.useParams();
   const { user } = useAuth();
@@ -118,6 +161,23 @@ function ApplicationDetailsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const [actioningId, setActioningId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Device | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const apiBase =
+    (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
+    "http://localhost:4000";
+  const postUrl = `${apiBase}/api/public/applications/${applicationId}/device`;
+  const getUrl = `${apiBase}/api/public/applications/${applicationId}/deviceAccess`;
+  const postBody = JSON.stringify(
+    { deviceName: "DESKTOP-ABC123", deviceSecret: "9f1c2e7a8b3d", status: "pending" },
+    null,
+    2,
+  );
+  const curlPost = `curl -X POST "${postUrl}" \\
+  -H "Content-Type: application/json" \\
+  -d '${postBody.replace(/\n/g, " ").replace(/\s+/g, " ")}'`;
+  const curlGet = `curl "${getUrl}"`;
 
   const loadApp = useCallback(async () => {
     setAppLoading(true);
@@ -198,6 +258,21 @@ function ApplicationDetailsPage() {
       toast.error(e instanceof Error ? e.message : "Update failed");
     } finally {
       setActioningId(null);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await devicesApi.remove(applicationId, deleteTarget.id);
+      setDevices((prev) => prev.filter((d) => d.id !== deleteTarget.id));
+      toast.success("Device deleted");
+      setDeleteTarget(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Delete failed");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -440,6 +515,15 @@ function ApplicationDetailsPage() {
                                   >
                                     <X className="h-3.5 w-3.5" /> Reject
                                   </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setDeleteTarget(d)}
+                                    className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                    aria-label="Delete device"
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" /> Delete
+                                  </Button>
                                 </>
                               ) : (
                                 <span className="text-xs text-muted-foreground">
@@ -465,7 +549,138 @@ function ApplicationDetailsPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.15 }}
+          className="mt-6"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle>Public API reference</CardTitle>
+              <CardDescription>
+                Use these endpoints from any device or backend. No authentication required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* POST */}
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-primary/15 text-primary">POST</Badge>
+                  <span className="text-sm font-medium">Register a device</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Send a JSON body with <code className="rounded bg-muted px-1">deviceName</code>,{" "}
+                  <code className="rounded bg-muted px-1">deviceSecret</code> and{" "}
+                  <code className="rounded bg-muted px-1">status</code>. The server always
+                  stores new devices as <strong>pending</strong> regardless of the value sent.
+                </p>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Endpoint
+                  </Label>
+                  <CopyBlock value={postUrl} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Request body
+                  </Label>
+                  <CopyBlock value={postBody} language="json" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    cURL example
+                  </Label>
+                  <CopyBlock value={curlPost} language="bash" />
+                </div>
+              </div>
+
+              {/* GET */}
+              <div className="space-y-2 border-t border-border/60 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-success/15 text-success">GET</Badge>
+                  <span className="text-sm font-medium">List device access requests</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Returns every device registered against this application with its current{" "}
+                  <code className="rounded bg-muted px-1">status</code> (
+                  <em>pending | approved | rejected</em>).
+                </p>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Endpoint
+                  </Label>
+                  <CopyBlock value={getUrl} />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    cURL example
+                  </Label>
+                  <CopyBlock value={curlGet} language="bash" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Example response
+                  </Label>
+                  <CopyBlock
+                    language="json"
+                    value={`{
+  "devices": [
+    {
+      "id": "...",
+      "applicationId": "${applicationId}",
+      "deviceName": "DESKTOP-ABC123",
+      "deviceSecret": "9f1c2e7a8b3d",
+      "status": "pending",
+      "createdAt": "...",
+      "updatedAt": "..."
+    }
+  ]
+}`}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </main>
+
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && !deleting && setDeleteTarget(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete device request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently remove{" "}
+              <strong className="text-foreground">{deleteTarget?.deviceName}</strong> from this
+              application. The device will need to register again to regain access. This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Deleting…
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
