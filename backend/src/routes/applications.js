@@ -1,6 +1,7 @@
 const express = require("express");
 const { z } = require("zod");
 const Application = require("../models/Application");
+const Device = require("../models/Device");
 const { requireAuth } = require("../lib/auth");
 
 const router = express.Router();
@@ -81,4 +82,56 @@ router.delete("/:id", async (req, res, next) => {
   }
 });
 
+// --- Owner-only device management ---
+// List devices for an application (owner only — returns same shape as the
+// public route, but enforces ownership so the owner can manage them).
+router.get("/:id/devices", async (req, res, next) => {
+  try {
+    const app = await Application.findOne({ publicId: req.params.id, ownerId: req.user._id });
+    if (!app) return res.status(404).json({ error: "Not found" });
+    const devices = await Device.find({ applicationId: app._id }).sort({ createdAt: -1 });
+    res.json({ devices: devices.map((d) => d.toClientJSON()) });
+  } catch (e) {
+    next(e);
+  }
+});
+
+const deviceUpdateSchema = z.object({
+  status: z.enum(["pending", "approved", "rejected"]),
+});
+router.patch("/:id/devices/:deviceId", async (req, res, next) => {
+  try {
+    const parsed = deviceUpdateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res
+        .status(400)
+        .json({ error: parsed.error.issues?.[0]?.message || "Invalid input" });
+    }
+    const app = await Application.findOne({ publicId: req.params.id, ownerId: req.user._id });
+    if (!app) return res.status(404).json({ error: "Not found" });
+
+    const device = await Device.findOne({ _id: req.params.deviceId, applicationId: app._id });
+    if (!device) return res.status(404).json({ error: "Device not found" });
+
+    device.status = parsed.data.status;
+    await device.save();
+    res.json({ device: device.toClientJSON() });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.delete("/:id/devices/:deviceId", async (req, res, next) => {
+  try {
+    const app = await Application.findOne({ publicId: req.params.id, ownerId: req.user._id });
+    if (!app) return res.status(404).json({ error: "Not found" });
+    const result = await Device.deleteOne({ _id: req.params.deviceId, applicationId: app._id });
+    if (result.deletedCount === 0) return res.status(404).json({ error: "Device not found" });
+    res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
 module.exports = router;
+
