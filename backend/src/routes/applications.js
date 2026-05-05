@@ -53,6 +53,7 @@ const updateSchema = z.object({
     .refine((s) => !isNaN(Date.parse(s)), "Invalid expiry date")
     .optional(),
   blocked: z.boolean().optional(),
+  autoApproveDevices: z.boolean().optional(),
 });
 router.patch("/:id", async (req, res, next) => {
   try {
@@ -65,6 +66,8 @@ router.patch("/:id", async (req, res, next) => {
     if (parsed.data.description !== undefined) app.description = parsed.data.description;
     if (parsed.data.expiryDate !== undefined) app.expiryDate = new Date(parsed.data.expiryDate);
     if (parsed.data.blocked !== undefined) app.blocked = parsed.data.blocked;
+    if (parsed.data.autoApproveDevices !== undefined)
+      app.autoApproveDevices = parsed.data.autoApproveDevices;
     await app.save();
     res.json({ application: app.toClientJSON() });
   } catch (e) {

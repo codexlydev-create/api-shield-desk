@@ -9,6 +9,7 @@ const ApplicationSchema = new mongoose.Schema(
     description: { type: String, default: "", trim: true },
     expiryDate: { type: Date, required: true },
     blocked: { type: Boolean, default: false },
+    autoApproveDevices: { type: Boolean, default: false },
     apiKey: { type: String, required: true },
   },
   { timestamps: true },
@@ -36,6 +37,7 @@ ApplicationSchema.methods.toClientJSON = function () {
     description: this.description,
     expiryDate: this.expiryDate.toISOString(),
     blocked: this.blocked,
+    autoApproveDevices: !!this.autoApproveDevices,
     apiKey: this.apiKey,
     createdAt: this.createdAt.toISOString(),
   };
