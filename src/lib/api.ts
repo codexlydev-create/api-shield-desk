@@ -16,6 +16,7 @@ export type Application = {
   description: string;
   expiryDate: string;
   blocked: boolean;
+  autoApproveDevices?: boolean;
   apiKey: string;
   createdAt: string;
 };
@@ -106,7 +107,7 @@ export const applicationsApi = {
     request<{ application: Application }>("/api/applications", { method: "POST", body: input, auth: true }),
   update: (
     id: string,
-    input: Partial<{ name: string; description: string; expiryDate: string; blocked: boolean }>,
+    input: Partial<{ name: string; description: string; expiryDate: string; blocked: boolean; autoApproveDevices: boolean }>,
   ) =>
     request<{ application: Application }>(`/api/applications/${id}`, {
       method: "PATCH",
