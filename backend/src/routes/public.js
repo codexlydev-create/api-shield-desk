@@ -78,7 +78,7 @@ router.post("/applications/:id/device", async (req, res, next) => {
       applicationPublicId: app.publicId,
       deviceName: parsed.data.deviceName,
       deviceSecret: parsed.data.deviceSecret,
-      status: "pending",
+      status: app.autoApproveDevices ? "approved" : "pending",
     });
     res.status(201).json({ device: device.toClientJSON() });
   } catch (e) {
