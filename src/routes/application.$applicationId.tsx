@@ -476,11 +476,31 @@ function ApplicationDetailsPage() {
           className="mt-6"
         >
           <Card>
-            <CardHeader>
-              <CardTitle>Device access requests</CardTitle>
-              <CardDescription>
-                {devices.length} request{devices.length === 1 ? "" : "s"}
-              </CardDescription>
+            <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+              <div className="space-y-1.5">
+                <CardTitle>Device access requests</CardTitle>
+                <CardDescription>
+                  {devices.length} request{devices.length === 1 ? "" : "s"}
+                </CardDescription>
+              </div>
+              {canManage && ownedApp && (
+                <div className="flex items-center gap-2 rounded-md border border-border/60 bg-muted/30 px-3 py-2">
+                  <div className="text-right">
+                    <Label htmlFor="auto-approve" className="text-xs font-medium">
+                      Auto Approve
+                    </Label>
+                    <p className="text-[10px] text-muted-foreground">
+                      New requests approved automatically
+                    </p>
+                  </div>
+                  <Switch
+                    id="auto-approve"
+                    checked={!!ownedApp.autoApproveDevices}
+                    disabled={autoApproveSaving}
+                    onCheckedChange={toggleAutoApprove}
+                  />
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {devicesLoading ? (
