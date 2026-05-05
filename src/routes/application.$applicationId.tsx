@@ -40,12 +40,15 @@ import {
 import { sessionStore } from "@/lib/storage";
 import { useAuth } from "@/lib/auth-context";
 import {
+  applicationsApi,
   devicesApi,
   publicApi,
+  type Application,
   type Device,
   type DeviceStatus,
   type PublicApplicationResponse,
 } from "@/lib/api";
+import { Switch } from "@/components/ui/switch";
 
 export const Route = createFileRoute("/application/$applicationId")({
   head: ({ params }) => ({
@@ -163,6 +166,8 @@ function ApplicationDetailsPage() {
   const [actioningId, setActioningId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Device | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [ownedApp, setOwnedApp] = useState<Application | null>(null);
+  const [autoApproveSaving, setAutoApproveSaving] = useState(false);
 
   const apiBase =
     (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
@@ -218,6 +223,42 @@ function ApplicationDetailsPage() {
     loadApp();
     loadDevices();
   }, [loadApp, loadDevices]);
+
+  // Owner-only: fetch the owned application to read autoApproveDevices.
+  useEffect(() => {
+    if (!isAuthed) return;
+    let cancelled = false;
+    applicationsApi
+      .list()
+      .then(({ applications }) => {
+        if (cancelled) return;
+        const found = applications.find((a) => a.id === applicationId) || null;
+        setOwnedApp(found);
+      })
+      .catch(() => {
+        /* ignore — non-owner */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthed, applicationId]);
+
+  const toggleAutoApprove = async (next: boolean) => {
+    if (!ownedApp) return;
+    const prev = ownedApp.autoApproveDevices ?? false;
+    setOwnedApp({ ...ownedApp, autoApproveDevices: next });
+    setAutoApproveSaving(true);
+    try {
+      const res = await applicationsApi.update(applicationId, { autoApproveDevices: next });
+      setOwnedApp(res.application);
+      toast.success(next ? "Auto-approve enabled" : "Auto-approve disabled");
+    } catch (e) {
+      setOwnedApp({ ...ownedApp, autoApproveDevices: prev });
+      toast.error(e instanceof Error ? e.message : "Failed to update");
+    } finally {
+      setAutoApproveSaving(false);
+    }
+  };
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
