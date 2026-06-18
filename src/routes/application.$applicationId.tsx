@@ -229,10 +229,30 @@ function ApplicationDetailsPage() {
     }
   }, [applicationId, isAuthed]);
 
+  const loadLocations = useCallback(async () => {
+    setLocationsError(null);
+    try {
+      const res = isAuthed
+        ? await locationsApi.listOwned(applicationId).catch(async (e) => {
+            if (e && typeof e === "object" && "status" in e && (e as { status: number }).status === 404) {
+              return locationsApi.listPublic(applicationId);
+            }
+            throw e;
+          })
+        : await locationsApi.listPublic(applicationId);
+      setLocations(res.locations);
+    } catch (e) {
+      setLocationsError(e instanceof Error ? e.message : "Failed to load locations");
+    } finally {
+      setLocationsLoading(false);
+    }
+  }, [applicationId, isAuthed]);
+
   useEffect(() => {
     loadApp();
     loadDevices();
-  }, [loadApp, loadDevices]);
+    loadLocations();
+  }, [loadApp, loadDevices, loadLocations]);
 
   // Owner-only: fetch the owned application to read autoApproveDevices.
   useEffect(() => {
