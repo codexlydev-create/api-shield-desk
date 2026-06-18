@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   Loader2,
+  MapPin,
   RefreshCw,
   ShieldCheck,
   Trash2,
