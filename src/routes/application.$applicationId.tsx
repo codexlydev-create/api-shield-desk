@@ -42,10 +42,12 @@ import { useAuth } from "@/lib/auth-context";
 import {
   applicationsApi,
   devicesApi,
+  locationsApi,
   publicApi,
   type Application,
   type Device,
   type DeviceStatus,
+  type LocationEntry,
   type PublicApplicationResponse,
 } from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
