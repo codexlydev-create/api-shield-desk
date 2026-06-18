@@ -2,6 +2,7 @@ const express = require("express");
 const { z } = require("zod");
 const Application = require("../models/Application");
 const Device = require("../models/Device");
+const Location = require("../models/Location");
 const { requireAuth } = require("../lib/auth");
 
 const router = express.Router();
@@ -131,6 +132,22 @@ router.delete("/:id/devices/:deviceId", async (req, res, next) => {
     const result = await Device.deleteOne({ _id: req.params.deviceId, applicationId: app._id });
     if (result.deletedCount === 0) return res.status(404).json({ error: "Device not found" });
     res.json({ ok: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// Owner-only: full location history for an application.
+router.get("/:id/locations", async (req, res, next) => {
+  try {
+    const app = await Application.findOne({ publicId: req.params.id, ownerId: req.user._id });
+    if (!app) return res.status(404).json({ error: "Not found" });
+    const filter = { applicationId: app._id };
+    if (req.query.deviceSecret) filter.deviceSecret = String(req.query.deviceSecret);
+    const items = await Location.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(Math.min(Number(req.query.limit) || 500, 2000));
+    res.json({ locations: items.map((l) => l.toClientJSON()) });
   } catch (e) {
     next(e);
   }

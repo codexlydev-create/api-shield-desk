@@ -2,6 +2,7 @@ const express = require("express");
 const { z } = require("zod");
 const Application = require("../models/Application");
 const Device = require("../models/Device");
+const Location = require("../models/Location");
 
 const router = express.Router();
 
@@ -52,6 +53,8 @@ router.get("/applications/:id", async (req, res, next) => {
         minutes: expired ? -minutes : minutes,
         seconds: expired ? -seconds : seconds,
       },
+      createdAt: app.createdAt.toISOString(),
+      expiresAt: app.expiryDate.toISOString(),
     });
   } catch (e) {
     next(e);
@@ -62,9 +65,10 @@ router.get("/applications/:id", async (req, res, next) => {
 const registerSchema = z.object({
   deviceName: z.string().trim().min(1).max(120),
   deviceSecret: z.string().trim().min(1).max(200),
-  // status is always forced to "pending" — we accept it from the body for
-  // API symmetry but ignore any other value.
   status: z.string().optional(),
+  windowsInfo: z.record(z.any()).optional(),
+  registrationTime: z.string().optional(),
+  formattedRegistrationTime: z.string().optional(),
 });
 router.post("/applications/:id/device", async (req, res, next) => {
   try {
@@ -79,6 +83,9 @@ router.post("/applications/:id/device", async (req, res, next) => {
       deviceName: parsed.data.deviceName,
       deviceSecret: parsed.data.deviceSecret,
       status: app.autoApproveDevices ? "approved" : "pending",
+      windowsInfo: parsed.data.windowsInfo || null,
+      registrationTime: parsed.data.registrationTime || null,
+      formattedRegistrationTime: parsed.data.formattedRegistrationTime || null,
     });
     res.status(201).json({ device: device.toClientJSON() });
   } catch (e) {
@@ -98,5 +105,65 @@ router.get("/applications/:id/deviceAccess", async (req, res, next) => {
   }
 });
 
-module.exports = router;
+// --- Public location ingest ---
+// Every call appends a new record — full history is preserved.
+const locationSchema = z.object({
+  deviceSecret: z.string().trim().min(1).max(200),
+  timestamp: z.string().optional(),
+  formattedDateTime: z.string().optional(),
+  location: z.record(z.any()).optional(),
+  windowsInfo: z.record(z.any()).optional(),
+});
+router.post("/applications/:id/location", async (req, res, next) => {
+  try {
+    const parsed = locationSchema.safeParse(req.body);
+    if (!parsed.success) return badRequest(res, parsed.error);
+    const app = await Application.findOne({ publicId: req.params.id });
+    if (!app) return res.status(404).json({ error: "Application not found" });
 
+    // Best-effort device match by secret (history still stored even if unmatched).
+    const device = await Device.findOne({
+      applicationId: app._id,
+      deviceSecret: parsed.data.deviceSecret,
+    });
+
+    const entry = await Location.create({
+      applicationId: app._id,
+      applicationPublicId: app.publicId,
+      deviceId: device ? device._id : null,
+      deviceSecret: parsed.data.deviceSecret,
+      timestamp: parsed.data.timestamp || new Date().toISOString(),
+      formattedDateTime: parsed.data.formattedDateTime || fmtDate(new Date()),
+      location: parsed.data.location || null,
+      windowsInfo: parsed.data.windowsInfo || null,
+    });
+
+    // If first-time location includes windowsInfo and the device has none, persist it.
+    if (device && parsed.data.windowsInfo && !device.windowsInfo) {
+      device.windowsInfo = parsed.data.windowsInfo;
+      await device.save();
+    }
+
+    res.status(201).json({ location: entry.toClientJSON() });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// --- Public read of location history for an application ---
+router.get("/applications/:id/locations", async (req, res, next) => {
+  try {
+    const app = await Application.findOne({ publicId: req.params.id });
+    if (!app) return res.status(404).json({ error: "Application not found" });
+    const filter = { applicationId: app._id };
+    if (req.query.deviceSecret) filter.deviceSecret = String(req.query.deviceSecret);
+    const items = await Location.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(Math.min(Number(req.query.limit) || 500, 2000));
+    res.json({ locations: items.map((l) => l.toClientJSON()) });
+  } catch (e) {
+    next(e);
+  }
+});
+
+module.exports = router;

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useState, useCallback } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
@@ -6,6 +6,7 @@ import {
   Check,
   Copy,
   Loader2,
+  MapPin,
   RefreshCw,
   ShieldCheck,
   Trash2,
@@ -42,10 +43,12 @@ import { useAuth } from "@/lib/auth-context";
 import {
   applicationsApi,
   devicesApi,
+  locationsApi,
   publicApi,
   type Application,
   type Device,
   type DeviceStatus,
+  type LocationEntry,
   type PublicApplicationResponse,
 } from "@/lib/api";
 import { Switch } from "@/components/ui/switch";
@@ -169,20 +172,109 @@ function ApplicationDetailsPage() {
   const [ownedApp, setOwnedApp] = useState<Application | null>(null);
   const [autoApproveSaving, setAutoApproveSaving] = useState(false);
 
+  const [locations, setLocations] = useState<LocationEntry[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [expandedDevice, setExpandedDevice] = useState<string | null>(null);
+
+
+
   const apiBase =
     (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
     "http://localhost:4000";
-  const postUrl = `${apiBase}/api/public/applications/${applicationId}/device`;
-  const getUrl = `${apiBase}/api/public/applications/${applicationId}/deviceAccess`;
-  const postBody = JSON.stringify(
-    { deviceName: "DESKTOP-ABC123", deviceSecret: "9f1c2e7a8b3d", status: "pending" },
+  const baseUrl = `${apiBase}/api/public/applications/${applicationId}`;
+  const statusUrl = baseUrl;
+  const postUrl = `${baseUrl}/device`;
+  const getUrl = `${baseUrl}/deviceAccess`;
+  const locationUrl = `${baseUrl}/location`;
+  const locationsUrl = `${baseUrl}/locations`;
+
+  const postBodyFull = JSON.stringify(
+    {
+      deviceName: "DESKTOP-ABC123",
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      status: "pending",
+      windowsInfo: {
+        system: "Windows",
+        node: "DESKTOP-ABC123",
+        release: "10",
+        version: "10.0.19045",
+        machine: "AMD64",
+        processor: "Intel64 Family 6 Model 142...",
+        platform: "Windows-10-10.0.19045-SP0",
+        hostname: "DESKTOP-ABC123",
+        os: "nt",
+        python_version: "3.9.0",
+        product_name: "Windows 10 Pro",
+        current_build: "19045",
+        release_id: "2009",
+        windows_edition: "Professional",
+      },
+      registrationTime: "2026-06-18T15:30:00.123456",
+      formattedRegistrationTime: "18-06-2026 of 03:30 PM",
+    },
     null,
     2,
   );
-  const curlPost = `curl -X POST "${postUrl}" \\
-  -H "Content-Type: application/json" \\
-  -d '${postBody.replace(/\n/g, " ").replace(/\s+/g, " ")}'`;
-  const curlGet = `curl "${getUrl}"`;
+
+  const locBodyNormal = JSON.stringify(
+    {
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      timestamp: "2026-06-18T15:30:00.123456",
+      formattedDateTime: "18-06-2026 of 03:30 PM",
+      location: {
+        latitude: 40.7128,
+        longitude: -74.006,
+        source: "windows_geolocation",
+      },
+    },
+    null,
+    2,
+  );
+  const locBodyWithWin = JSON.stringify(
+    {
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      timestamp: "2026-06-18T15:30:00.123456",
+      formattedDateTime: "18-06-2026 of 03:30 PM",
+      location: { latitude: 40.7128, longitude: -74.006, source: "windows_geolocation" },
+      windowsInfo: {
+        product_name: "Windows 10 Pro",
+        current_build: "19045",
+        processor: "Intel64 Family 6 Model 142...",
+        release: "10",
+        machine: "AMD64",
+      },
+    },
+    null,
+    2,
+  );
+  const locBodyIpinfo = JSON.stringify(
+    {
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      timestamp: "2026-06-18T15:30:00.123456",
+      formattedDateTime: "18-06-2026 of 03:30 PM",
+      location: {
+        latitude: 40.7128,
+        longitude: -74.006,
+        city: "New York",
+        region: "New York",
+        country: "US",
+        source: "ipinfo",
+      },
+    },
+    null,
+    2,
+  );
+  const locBodyUnavailable = JSON.stringify(
+    {
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      timestamp: "2026-06-18T15:30:00.123456",
+      formattedDateTime: "18-06-2026 of 03:30 PM",
+      location: { latitude: 0.0, longitude: 0.0, error: "Location unavailable" },
+    },
+    null,
+    2,
+  );
 
   const loadApp = useCallback(async () => {
     setAppLoading(true);
@@ -219,10 +311,30 @@ function ApplicationDetailsPage() {
     }
   }, [applicationId, isAuthed]);
 
+  const loadLocations = useCallback(async () => {
+    setLocationsError(null);
+    try {
+      const res = isAuthed
+        ? await locationsApi.listOwned(applicationId).catch(async (e) => {
+            if (e && typeof e === "object" && "status" in e && (e as { status: number }).status === 404) {
+              return locationsApi.listPublic(applicationId);
+            }
+            throw e;
+          })
+        : await locationsApi.listPublic(applicationId);
+      setLocations(res.locations);
+    } catch (e) {
+      setLocationsError(e instanceof Error ? e.message : "Failed to load locations");
+    } finally {
+      setLocationsLoading(false);
+    }
+  }, [applicationId, isAuthed]);
+
   useEffect(() => {
     loadApp();
     loadDevices();
-  }, [loadApp, loadDevices]);
+    loadLocations();
+  }, [loadApp, loadDevices, loadLocations]);
 
   // Owner-only: fetch the owned application to read autoApproveDevices.
   useEffect(() => {
@@ -336,6 +448,7 @@ function ApplicationDetailsPage() {
             onClick={() => {
               loadApp();
               loadDevices();
+              loadLocations();
             }}
             className="gap-2"
           >
@@ -531,70 +644,114 @@ function ApplicationDetailsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {devices.map((d) => (
-                        <tr
-                          key={d.id}
-                          className="border-b border-border/40 last:border-0 hover:bg-muted/30"
-                        >
-                          <td className="px-3 py-2 font-medium">{d.deviceName}</td>
-                          <td className="px-3 py-2">
-                            <div className="flex items-center gap-1">
-                              <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
-                                {d.deviceSecret}
-                              </code>
-                              <CopyInline value={d.deviceSecret} />
-                            </div>
-                          </td>
-                          <td className="px-3 py-2">
-                            <StatusBadge status={d.status} />
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="flex items-center justify-end gap-2">
-                              {canManage ? (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={
-                                      actioningId === d.id ||
-                                      d.status === "approved"
-                                    }
-                                    onClick={() => updateStatus(d, "approved")}
-                                    className="gap-1 border-success/40 text-success hover:bg-success/10"
-                                  >
-                                    <Check className="h-3.5 w-3.5" /> Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={
-                                      actioningId === d.id ||
-                                      d.status === "rejected"
-                                    }
-                                    onClick={() => updateStatus(d, "rejected")}
-                                    className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                  >
-                                    <X className="h-3.5 w-3.5" /> Reject
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setDeleteTarget(d)}
-                                    className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                    aria-label="Delete device"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" /> Delete
-                                  </Button>
-                                </>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  Owner only
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {devices.map((d) => {
+                        const isOpen = expandedDevice === d.id;
+                        const hasDetails =
+                          !!d.windowsInfo || !!d.formattedRegistrationTime || !!d.registrationTime;
+                        return (
+                          <Fragment key={d.id}>
+                            <tr
+                              key={d.id}
+                              className="border-b border-border/40 last:border-0 hover:bg-muted/30"
+                            >
+                              <td className="px-3 py-2 font-medium">
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedDevice(isOpen ? null : d.id)}
+                                  className="text-left hover:underline"
+                                  disabled={!hasDetails}
+                                  title={hasDetails ? "Toggle details" : "No extra details"}
+                                >
+                                  {d.deviceName}
+                                </button>
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-1">
+                                  <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
+                                    {d.deviceSecret}
+                                  </code>
+                                  <CopyInline value={d.deviceSecret} />
+                                </div>
+                              </td>
+                              <td className="px-3 py-2">
+                                <StatusBadge status={d.status} />
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center justify-end gap-2">
+                                  {canManage ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={
+                                          actioningId === d.id ||
+                                          d.status === "approved"
+                                        }
+                                        onClick={() => updateStatus(d, "approved")}
+                                        className="gap-1 border-success/40 text-success hover:bg-success/10"
+                                      >
+                                        <Check className="h-3.5 w-3.5" /> Approve
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={
+                                          actioningId === d.id ||
+                                          d.status === "rejected"
+                                        }
+                                        onClick={() => updateStatus(d, "rejected")}
+                                        className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                      >
+                                        <X className="h-3.5 w-3.5" /> Reject
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setDeleteTarget(d)}
+                                        className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                        aria-label="Delete device"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">
+                                      Owner only
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                            {isOpen && hasDetails && (
+                              <tr key={d.id + "-details"} className="bg-muted/20">
+                                <td colSpan={4} className="px-3 py-3">
+                                  <div className="grid gap-2 text-xs sm:grid-cols-2">
+                                    {d.formattedRegistrationTime && (
+                                      <div>
+                                        <span className="text-muted-foreground">Registered: </span>
+                                        <span className="font-mono">
+                                          {d.formattedRegistrationTime}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {d.registrationTime && (
+                                      <div>
+                                        <span className="text-muted-foreground">ISO: </span>
+                                        <span className="font-mono">{d.registrationTime}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {d.windowsInfo && (
+                                    <pre className="mt-2 overflow-x-auto rounded-md border border-border/60 bg-background/60 p-2 font-mono text-[11px]">
+{JSON.stringify(d.windowsInfo, null, 2)}
+                                    </pre>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                          </Fragment>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -614,6 +771,104 @@ function ApplicationDetailsPage() {
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3, delay: 0.12 }}
+          className="mt-6"
+        >
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-primary" /> Location history
+              </CardTitle>
+              <CardDescription>
+                Every <code className="rounded bg-muted px-1">POST /location</code> call is
+                appended here — full history is preserved ({locations.length} entr
+                {locations.length === 1 ? "y" : "ies"}).
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {locationsLoading ? (
+                <div className="space-y-2">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : locationsError ? (
+                <div className="rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+                  {locationsError}
+                </div>
+              ) : locations.length === 0 ? (
+                <div className="py-8 text-center text-sm text-muted-foreground">
+                  No location records yet. POST to{" "}
+                  <code className="rounded bg-muted px-1">{locationUrl}</code> to add one.
+                </div>
+              ) : (
+                <div className="max-h-[480px] overflow-auto rounded-md border border-border/60">
+                  <table className="w-full text-sm">
+                    <thead className="sticky top-0 bg-background">
+                      <tr className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                        <th className="px-3 py-2 font-medium">When</th>
+                        <th className="px-3 py-2 font-medium">Device secret</th>
+                        <th className="px-3 py-2 font-medium">Latitude, Longitude</th>
+                        <th className="px-3 py-2 font-medium">Source / Place</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {locations.map((l) => {
+                        const lat = l.location?.latitude;
+                        const lng = l.location?.longitude;
+                        const place = [l.location?.city, l.location?.region, l.location?.country]
+                          .filter(Boolean)
+                          .join(", ");
+                        return (
+                          <tr
+                            key={l.id}
+                            className="border-b border-border/40 last:border-0 hover:bg-muted/30"
+                          >
+                            <td className="px-3 py-2 font-mono text-xs">
+                              {l.formattedDateTime ||
+                                (l.timestamp
+                                  ? new Date(l.timestamp).toLocaleString()
+                                  : new Date(l.createdAt).toLocaleString())}
+                            </td>
+                            <td className="px-3 py-2">
+                              <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px]">
+                                {l.deviceSecret.slice(0, 14)}
+                                {l.deviceSecret.length > 14 ? "…" : ""}
+                              </code>
+                            </td>
+                            <td className="px-3 py-2 font-mono text-xs">
+                              {l.location?.error ? (
+                                <span className="text-destructive">{l.location.error}</span>
+                              ) : typeof lat === "number" && typeof lng === "number" ? (
+                                <a
+                                  href={`https://www.google.com/maps?q=${lat},${lng}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-primary hover:underline"
+                                >
+                                  {lat.toFixed(4)}, {lng.toFixed(4)}
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-xs text-muted-foreground">
+                              {l.location?.source || "—"}
+                              {place ? ` · ${place}` : ""}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: 0.15 }}
           className="mt-6"
         >
@@ -621,87 +876,142 @@ function ApplicationDetailsPage() {
             <CardHeader>
               <CardTitle>Public API reference</CardTitle>
               <CardDescription>
-                Use these endpoints from any device or backend. No authentication required.
+                All endpoints below are public — no authentication required. Base URL:{" "}
+                <code className="rounded bg-muted px-1 font-mono">{baseUrl}</code>
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              {/* POST */}
-              <div className="space-y-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge className="border-0 bg-primary/15 text-primary">POST</Badge>
-                  <span className="text-sm font-medium">Register a device</span>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Send a JSON body with <code className="rounded bg-muted px-1">deviceName</code>,{" "}
-                  <code className="rounded bg-muted px-1">deviceSecret</code> and{" "}
-                  <code className="rounded bg-muted px-1">status</code>. The server always
-                  stores new devices as <strong>pending</strong> regardless of the value sent.
-                </p>
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Endpoint
-                  </Label>
-                  <CopyBlock value={postUrl} />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Request body
-                  </Label>
-                  <CopyBlock value={postBody} language="json" />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                    cURL example
-                  </Label>
-                  <CopyBlock value={curlPost} language="bash" />
-                </div>
-              </div>
-
-              {/* GET */}
-              <div className="space-y-2 border-t border-border/60 pt-6">
+            <CardContent className="space-y-8">
+              {/* 1. CHECK STATUS */}
+              <section className="space-y-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge className="border-0 bg-success/15 text-success">GET</Badge>
-                  <span className="text-sm font-medium">List device access requests</span>
+                  <span className="text-sm font-medium">1. Check application status</span>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Returns every device registered against this application with its current{" "}
+                  Returns whether the application is <em>active</em>, <em>expired</em>, or{" "}
+                  <em>blocked</em>, plus remaining validity.
+                </p>
+                <CopyBlock value={statusUrl} />
+                <CopyBlock language="bash" value={`curl "${statusUrl}"`} />
+              </section>
+
+              {/* 2. REGISTER DEVICE */}
+              <section className="space-y-2 border-t border-border/60 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-primary/15 text-primary">POST</Badge>
+                  <span className="text-sm font-medium">2. Register device (first time)</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Register a new device for admin approval. The server forces{" "}
+                  <code className="rounded bg-muted px-1">status</code> to{" "}
+                  <strong>pending</strong> unless auto-approve is enabled.
+                </p>
+                <CopyBlock value={postUrl} />
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Request body
+                </Label>
+                <CopyBlock value={postBodyFull} language="json" />
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  cURL
+                </Label>
+                <CopyBlock
+                  language="bash"
+                  value={`curl -X POST "${postUrl}" \\
+  -H "Content-Type: application/json" \\
+  -d @device.json`}
+                />
+              </section>
+
+              {/* 3. CHECK DEVICE STATUS */}
+              <section className="space-y-2 border-t border-border/60 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-success/15 text-success">GET</Badge>
+                  <span className="text-sm font-medium">3. Check device status</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Lists every device with its current{" "}
                   <code className="rounded bg-muted px-1">status</code> (
                   <em>pending | approved | rejected</em>).
                 </p>
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Endpoint
-                  </Label>
-                  <CopyBlock value={getUrl} />
+                <CopyBlock value={getUrl} />
+                <CopyBlock language="bash" value={`curl "${getUrl}"`} />
+              </section>
+
+              {/* 4. POST LOCATION NORMAL */}
+              <section className="space-y-2 border-t border-border/60 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-primary/15 text-primary">POST</Badge>
+                  <span className="text-sm font-medium">4. Post location &amp; time (normal)</span>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                    cURL example
-                  </Label>
-                  <CopyBlock value={curlGet} language="bash" />
+                <p className="text-xs text-muted-foreground">
+                  Send current location and timestamp. Every call appends a new history record.
+                </p>
+                <CopyBlock value={locationUrl} />
+                <Label className="text-xs uppercase tracking-wide text-muted-foreground">
+                  Request body
+                </Label>
+                <CopyBlock value={locBodyNormal} language="json" />
+              </section>
+
+              {/* 5. POST LOCATION WITH WIN INFO */}
+              <section className="space-y-2 border-t border-border/60 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-primary/15 text-primary">POST</Badge>
+                  <span className="text-sm font-medium">
+                    5. Post location &amp; time (with Windows info)
+                  </span>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs uppercase tracking-wide text-muted-foreground">
-                    Example response
-                  </Label>
-                  <CopyBlock
-                    language="json"
-                    value={`{
-  "devices": [
-    {
-      "id": "...",
-      "applicationId": "${applicationId}",
-      "deviceName": "DESKTOP-ABC123",
-      "deviceSecret": "9f1c2e7a8b3d",
-      "status": "pending",
-      "createdAt": "...",
-      "updatedAt": "..."
-    }
-  ]
-}`}
-                  />
+                <p className="text-xs text-muted-foreground">
+                  Same endpoint, includes <code className="rounded bg-muted px-1">windowsInfo</code>{" "}
+                  on first call after registration.
+                </p>
+                <CopyBlock value={locationUrl} />
+                <CopyBlock value={locBodyWithWin} language="json" />
+              </section>
+
+              {/* 6. POST LOCATION IPINFO */}
+              <section className="space-y-2 border-t border-border/60 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-primary/15 text-primary">POST</Badge>
+                  <span className="text-sm font-medium">
+                    6. Post location &amp; time (IPinfo fallback)
+                  </span>
                 </div>
-              </div>
+                <p className="text-xs text-muted-foreground">
+                  Use this shape when GPS is unavailable and you have an IPinfo lookup.
+                </p>
+                <CopyBlock value={locationUrl} />
+                <CopyBlock value={locBodyIpinfo} language="json" />
+              </section>
+
+              {/* 7. POST LOCATION UNAVAILABLE */}
+              <section className="space-y-2 border-t border-border/60 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-primary/15 text-primary">POST</Badge>
+                  <span className="text-sm font-medium">
+                    7. Post location &amp; time (unavailable)
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Send when location cannot be retrieved — keeps the call cadence for tracking.
+                </p>
+                <CopyBlock value={locationUrl} />
+                <CopyBlock value={locBodyUnavailable} language="json" />
+              </section>
+
+              {/* BONUS: list locations */}
+              <section className="space-y-2 border-t border-border/60 pt-6">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Badge className="border-0 bg-success/15 text-success">GET</Badge>
+                  <span className="text-sm font-medium">List location history</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Returns the full location history for this application. Add{" "}
+                  <code className="rounded bg-muted px-1">?deviceSecret=…</code> to filter.
+                </p>
+                <CopyBlock value={locationsUrl} />
+                <CopyBlock language="bash" value={`curl "${locationsUrl}"`} />
+              </section>
             </CardContent>
           </Card>
         </motion.div>
