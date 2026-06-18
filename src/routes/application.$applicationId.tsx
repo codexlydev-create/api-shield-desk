@@ -567,7 +567,7 @@ function ApplicationDetailsPage() {
                         const hasDetails =
                           !!d.windowsInfo || !!d.formattedRegistrationTime || !!d.registrationTime;
                         return (
-                          <>
+                          <Fragment key={d.id}>
                             <tr
                               key={d.id}
                               className="border-b border-border/40 last:border-0 hover:bg-muted/30"
@@ -667,7 +667,7 @@ function ApplicationDetailsPage() {
                                 </td>
                               </tr>
                             )}
-                          </>
+                          </Fragment>
                         );
                       })}
                     </tbody>
