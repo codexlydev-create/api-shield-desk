@@ -182,17 +182,99 @@ function ApplicationDetailsPage() {
   const apiBase =
     (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
     "http://localhost:4000";
-  const postUrl = `${apiBase}/api/public/applications/${applicationId}/device`;
-  const getUrl = `${apiBase}/api/public/applications/${applicationId}/deviceAccess`;
-  const postBody = JSON.stringify(
-    { deviceName: "DESKTOP-ABC123", deviceSecret: "9f1c2e7a8b3d", status: "pending" },
+  const baseUrl = `${apiBase}/api/public/applications/${applicationId}`;
+  const statusUrl = baseUrl;
+  const postUrl = `${baseUrl}/device`;
+  const getUrl = `${baseUrl}/deviceAccess`;
+  const locationUrl = `${baseUrl}/location`;
+  const locationsUrl = `${baseUrl}/locations`;
+
+  const postBodyFull = JSON.stringify(
+    {
+      deviceName: "DESKTOP-ABC123",
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      status: "pending",
+      windowsInfo: {
+        system: "Windows",
+        node: "DESKTOP-ABC123",
+        release: "10",
+        version: "10.0.19045",
+        machine: "AMD64",
+        processor: "Intel64 Family 6 Model 142...",
+        platform: "Windows-10-10.0.19045-SP0",
+        hostname: "DESKTOP-ABC123",
+        os: "nt",
+        python_version: "3.9.0",
+        product_name: "Windows 10 Pro",
+        current_build: "19045",
+        release_id: "2009",
+        windows_edition: "Professional",
+      },
+      registrationTime: "2026-06-18T15:30:00.123456",
+      formattedRegistrationTime: "18-06-2026 of 03:30 PM",
+    },
     null,
     2,
   );
-  const curlPost = `curl -X POST "${postUrl}" \\
-  -H "Content-Type: application/json" \\
-  -d '${postBody.replace(/\n/g, " ").replace(/\s+/g, " ")}'`;
-  const curlGet = `curl "${getUrl}"`;
+
+  const locBodyNormal = JSON.stringify(
+    {
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      timestamp: "2026-06-18T15:30:00.123456",
+      formattedDateTime: "18-06-2026 of 03:30 PM",
+      location: {
+        latitude: 40.7128,
+        longitude: -74.006,
+        source: "windows_geolocation",
+      },
+    },
+    null,
+    2,
+  );
+  const locBodyWithWin = JSON.stringify(
+    {
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      timestamp: "2026-06-18T15:30:00.123456",
+      formattedDateTime: "18-06-2026 of 03:30 PM",
+      location: { latitude: 40.7128, longitude: -74.006, source: "windows_geolocation" },
+      windowsInfo: {
+        product_name: "Windows 10 Pro",
+        current_build: "19045",
+        processor: "Intel64 Family 6 Model 142...",
+        release: "10",
+        machine: "AMD64",
+      },
+    },
+    null,
+    2,
+  );
+  const locBodyIpinfo = JSON.stringify(
+    {
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      timestamp: "2026-06-18T15:30:00.123456",
+      formattedDateTime: "18-06-2026 of 03:30 PM",
+      location: {
+        latitude: 40.7128,
+        longitude: -74.006,
+        city: "New York",
+        region: "New York",
+        country: "US",
+        source: "ipinfo",
+      },
+    },
+    null,
+    2,
+  );
+  const locBodyUnavailable = JSON.stringify(
+    {
+      deviceSecret: "5e884898da28047151d0e56f8dc...",
+      timestamp: "2026-06-18T15:30:00.123456",
+      formattedDateTime: "18-06-2026 of 03:30 PM",
+      location: { latitude: 0.0, longitude: 0.0, error: "Location unavailable" },
+    },
+    null,
+    2,
+  );
 
   const loadApp = useCallback(async () => {
     setAppLoading(true);
