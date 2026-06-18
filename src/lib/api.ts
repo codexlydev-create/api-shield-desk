@@ -126,31 +126,56 @@ export type Device = {
   deviceName: string;
   deviceSecret: string;
   status: DeviceStatus;
+  windowsInfo?: Record<string, unknown> | null;
+  registrationTime?: string | null;
+  formattedRegistrationTime?: string | null;
   createdAt: string;
   updatedAt: string;
 };
 
+export type LocationEntry = {
+  id: string;
+  applicationId: string;
+  deviceId: string | null;
+  deviceSecret: string;
+  timestamp: string | null;
+  formattedDateTime: string | null;
+  location: {
+    latitude?: number;
+    longitude?: number;
+    source?: string;
+    city?: string;
+    region?: string;
+    country?: string;
+    error?: string;
+  } | null;
+  windowsInfo?: Record<string, unknown> | null;
+  createdAt: string;
+};
+
 export const devicesApi = {
-  // Public — anyone with the app id can register a device.
   register: (
     applicationId: string,
-    input: { deviceName: string; deviceSecret: string },
+    input: {
+      deviceName: string;
+      deviceSecret: string;
+      windowsInfo?: Record<string, unknown>;
+      registrationTime?: string;
+      formattedRegistrationTime?: string;
+    },
   ) =>
     request<{ device: Device }>(
       `/api/public/applications/${applicationId}/device`,
       { method: "POST", body: { ...input, status: "pending" } },
     ),
-  // Public — list all device requests for an application.
   listPublic: (applicationId: string) =>
     request<{ devices: Device[] }>(
       `/api/public/applications/${applicationId}/deviceAccess`,
     ),
-  // Owner-only — list devices for an owned application.
   listOwned: (applicationId: string) =>
     request<{ devices: Device[] }>(`/api/applications/${applicationId}/devices`, {
       auth: true,
     }),
-  // Owner-only — approve / reject / reset a device.
   updateStatus: (
     applicationId: string,
     deviceId: string,
@@ -167,6 +192,39 @@ export const devicesApi = {
     }),
 };
 
+export const locationsApi = {
+  // Public — send a location/timestamp record (history is preserved).
+  post: (
+    applicationId: string,
+    input: {
+      deviceSecret: string;
+      timestamp?: string;
+      formattedDateTime?: string;
+      location?: Record<string, unknown>;
+      windowsInfo?: Record<string, unknown>;
+    },
+  ) =>
+    request<{ location: LocationEntry }>(
+      `/api/public/applications/${applicationId}/location`,
+      { method: "POST", body: input },
+    ),
+  // Public — full location history.
+  listPublic: (applicationId: string, deviceSecret?: string) => {
+    const qs = deviceSecret ? `?deviceSecret=${encodeURIComponent(deviceSecret)}` : "";
+    return request<{ locations: LocationEntry[] }>(
+      `/api/public/applications/${applicationId}/locations${qs}`,
+    );
+  },
+  // Owner-only — full location history (same shape).
+  listOwned: (applicationId: string, deviceSecret?: string) => {
+    const qs = deviceSecret ? `?deviceSecret=${encodeURIComponent(deviceSecret)}` : "";
+    return request<{ locations: LocationEntry[] }>(
+      `/api/applications/${applicationId}/locations${qs}`,
+      { auth: true },
+    );
+  },
+};
+
 // ---------- Public ----------
 export type PublicApplicationResponse = {
   id: string;
@@ -174,6 +232,8 @@ export type PublicApplicationResponse = {
   status: ApplicationStatus;
   remaining_time: string;
   remaining: { days: number; hours: number; minutes: number; seconds: number };
+  createdAt?: string;
+  expiresAt?: string;
   error?: string;
 };
 export const publicApi = {
