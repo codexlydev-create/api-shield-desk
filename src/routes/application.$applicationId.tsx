@@ -562,70 +562,114 @@ function ApplicationDetailsPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {devices.map((d) => (
-                        <tr
-                          key={d.id}
-                          className="border-b border-border/40 last:border-0 hover:bg-muted/30"
-                        >
-                          <td className="px-3 py-2 font-medium">{d.deviceName}</td>
-                          <td className="px-3 py-2">
-                            <div className="flex items-center gap-1">
-                              <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
-                                {d.deviceSecret}
-                              </code>
-                              <CopyInline value={d.deviceSecret} />
-                            </div>
-                          </td>
-                          <td className="px-3 py-2">
-                            <StatusBadge status={d.status} />
-                          </td>
-                          <td className="px-3 py-2">
-                            <div className="flex items-center justify-end gap-2">
-                              {canManage ? (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={
-                                      actioningId === d.id ||
-                                      d.status === "approved"
-                                    }
-                                    onClick={() => updateStatus(d, "approved")}
-                                    className="gap-1 border-success/40 text-success hover:bg-success/10"
-                                  >
-                                    <Check className="h-3.5 w-3.5" /> Approve
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled={
-                                      actioningId === d.id ||
-                                      d.status === "rejected"
-                                    }
-                                    onClick={() => updateStatus(d, "rejected")}
-                                    className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                  >
-                                    <X className="h-3.5 w-3.5" /> Reject
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => setDeleteTarget(d)}
-                                    className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                    aria-label="Delete device"
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" /> Delete
-                                  </Button>
-                                </>
-                              ) : (
-                                <span className="text-xs text-muted-foreground">
-                                  Owner only
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
+                      {devices.map((d) => {
+                        const isOpen = expandedDevice === d.id;
+                        const hasDetails =
+                          !!d.windowsInfo || !!d.formattedRegistrationTime || !!d.registrationTime;
+                        return (
+                          <>
+                            <tr
+                              key={d.id}
+                              className="border-b border-border/40 last:border-0 hover:bg-muted/30"
+                            >
+                              <td className="px-3 py-2 font-medium">
+                                <button
+                                  type="button"
+                                  onClick={() => setExpandedDevice(isOpen ? null : d.id)}
+                                  className="text-left hover:underline"
+                                  disabled={!hasDetails}
+                                  title={hasDetails ? "Toggle details" : "No extra details"}
+                                >
+                                  {d.deviceName}
+                                </button>
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center gap-1">
+                                  <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
+                                    {d.deviceSecret}
+                                  </code>
+                                  <CopyInline value={d.deviceSecret} />
+                                </div>
+                              </td>
+                              <td className="px-3 py-2">
+                                <StatusBadge status={d.status} />
+                              </td>
+                              <td className="px-3 py-2">
+                                <div className="flex items-center justify-end gap-2">
+                                  {canManage ? (
+                                    <>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={
+                                          actioningId === d.id ||
+                                          d.status === "approved"
+                                        }
+                                        onClick={() => updateStatus(d, "approved")}
+                                        className="gap-1 border-success/40 text-success hover:bg-success/10"
+                                      >
+                                        <Check className="h-3.5 w-3.5" /> Approve
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        disabled={
+                                          actioningId === d.id ||
+                                          d.status === "rejected"
+                                        }
+                                        onClick={() => updateStatus(d, "rejected")}
+                                        className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                      >
+                                        <X className="h-3.5 w-3.5" /> Reject
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setDeleteTarget(d)}
+                                        className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                        aria-label="Delete device"
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" /> Delete
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <span className="text-xs text-muted-foreground">
+                                      Owner only
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                            {isOpen && hasDetails && (
+                              <tr key={d.id + "-details"} className="bg-muted/20">
+                                <td colSpan={4} className="px-3 py-3">
+                                  <div className="grid gap-2 text-xs sm:grid-cols-2">
+                                    {d.formattedRegistrationTime && (
+                                      <div>
+                                        <span className="text-muted-foreground">Registered: </span>
+                                        <span className="font-mono">
+                                          {d.formattedRegistrationTime}
+                                        </span>
+                                      </div>
+                                    )}
+                                    {d.registrationTime && (
+                                      <div>
+                                        <span className="text-muted-foreground">ISO: </span>
+                                        <span className="font-mono">{d.registrationTime}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {d.windowsInfo && (
+                                    <pre className="mt-2 overflow-x-auto rounded-md border border-border/60 bg-background/60 p-2 font-mono text-[11px]">
+{JSON.stringify(d.windowsInfo, null, 2)}
+                                    </pre>
+                                  )}
+                                </td>
+                              </tr>
+                            )}
+                          </>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
