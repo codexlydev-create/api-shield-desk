@@ -8,17 +8,18 @@ const DeviceSchema = new mongoose.Schema(
       required: true,
       index: true,
     },
-    // Denormalised public id of the parent application — handy for queries
-    // and for returning data without an extra populate.
     applicationPublicId: { type: String, required: true, index: true },
     deviceName: { type: String, required: true, trim: true, maxlength: 120 },
-    deviceSecret: { type: String, required: true, trim: true, maxlength: 200 },
+    deviceSecret: { type: String, required: true, trim: true, maxlength: 200, index: true },
     status: {
       type: String,
       enum: ["pending", "approved", "rejected"],
       default: "pending",
       index: true,
     },
+    windowsInfo: { type: mongoose.Schema.Types.Mixed, default: null },
+    registrationTime: { type: String, default: null },
+    formattedRegistrationTime: { type: String, default: null },
   },
   { timestamps: true },
 );
@@ -30,6 +31,9 @@ DeviceSchema.methods.toClientJSON = function () {
     deviceName: this.deviceName,
     deviceSecret: this.deviceSecret,
     status: this.status,
+    windowsInfo: this.windowsInfo || null,
+    registrationTime: this.registrationTime || null,
+    formattedRegistrationTime: this.formattedRegistrationTime || null,
     createdAt: this.createdAt.toISOString(),
     updatedAt: this.updatedAt.toISOString(),
   };
