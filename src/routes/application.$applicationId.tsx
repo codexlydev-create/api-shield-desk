@@ -172,6 +172,13 @@ function ApplicationDetailsPage() {
   const [ownedApp, setOwnedApp] = useState<Application | null>(null);
   const [autoApproveSaving, setAutoApproveSaving] = useState(false);
 
+  const [locations, setLocations] = useState<LocationEntry[]>([]);
+  const [locationsLoading, setLocationsLoading] = useState(true);
+  const [locationsError, setLocationsError] = useState<string | null>(null);
+  const [expandedDevice, setExpandedDevice] = useState<string | null>(null);
+
+
+
   const apiBase =
     (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, "") ||
     "http://localhost:4000";
