@@ -366,6 +366,7 @@ function ApplicationDetailsPage() {
             onClick={() => {
               loadApp();
               loadDevices();
+              loadLocations();
             }}
             className="gap-2"
           >
