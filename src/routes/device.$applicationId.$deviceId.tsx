@@ -23,7 +23,7 @@ import {
   type LocationEntry,
 } from "@/lib/api";
 
-export const Route = createFileRoute("/application/$applicationId/device/$deviceId")({
+export const Route = createFileRoute("/device/$applicationId/$deviceId")({
   head: ({ params }) => ({
     meta: [
       { title: `Device ${params.deviceId} — Details` },
