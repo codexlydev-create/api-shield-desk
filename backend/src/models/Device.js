@@ -20,6 +20,8 @@ const DeviceSchema = new mongoose.Schema(
     windowsInfo: { type: mongoose.Schema.Types.Mixed, default: null },
     registrationTime: { type: String, default: null },
     formattedRegistrationTime: { type: String, default: null },
+    ip: { type: String, default: null },
+    platform: { type: String, default: null },
   },
   { timestamps: true },
 );
@@ -34,6 +36,8 @@ DeviceSchema.methods.toClientJSON = function () {
     windowsInfo: this.windowsInfo || null,
     registrationTime: this.registrationTime || null,
     formattedRegistrationTime: this.formattedRegistrationTime || null,
+    ip: this.ip || null,
+    platform: this.platform || null,
     createdAt: this.createdAt.toISOString(),
     updatedAt: this.updatedAt.toISOString(),
   };
