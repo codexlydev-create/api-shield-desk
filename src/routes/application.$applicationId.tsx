@@ -177,7 +177,7 @@ function ApplicationDetailsPage() {
   const [locations, setLocations] = useState<LocationEntry[]>([]);
   const [locationsLoading, setLocationsLoading] = useState(true);
   const [locationsError, setLocationsError] = useState<string | null>(null);
-  const [expandedDevice, setExpandedDevice] = useState<string | null>(null);
+  
 
 
 
