@@ -147,6 +147,8 @@ router.post("/applications/:id/location", async (req, res, next) => {
       deviceSecret: parsed.data.deviceSecret,
     });
 
+    const ip = getClientIp(req);
+    const userAgent = req.headers["user-agent"] || null;
     const entry = await Location.create({
       applicationId: app._id,
       applicationPublicId: app.publicId,
@@ -156,12 +158,27 @@ router.post("/applications/:id/location", async (req, res, next) => {
       formattedDateTime: parsed.data.formattedDateTime || fmtDate(new Date()),
       location: parsed.data.location || null,
       windowsInfo: parsed.data.windowsInfo || null,
+      ip,
+      userAgent,
     });
 
-    // If first-time location includes windowsInfo and the device has none, persist it.
-    if (device && parsed.data.windowsInfo && !device.windowsInfo) {
-      device.windowsInfo = parsed.data.windowsInfo;
-      await device.save();
+    // Keep device's latest IP / platform / windowsInfo in sync.
+    if (device) {
+      let dirty = false;
+      if (parsed.data.windowsInfo && !device.windowsInfo) {
+        device.windowsInfo = parsed.data.windowsInfo;
+        dirty = true;
+      }
+      const platform = derivePlatform(parsed.data.windowsInfo || device.windowsInfo);
+      if (platform && device.platform !== platform) {
+        device.platform = platform;
+        dirty = true;
+      }
+      if (ip && device.ip !== ip) {
+        device.ip = ip;
+        dirty = true;
+      }
+      if (dirty) await device.save();
     }
 
     res.status(201).json({ location: entry.toClientJSON() });
@@ -173,6 +190,7 @@ router.post("/applications/:id/location", async (req, res, next) => {
 // --- Public read of location history for an application ---
 router.get("/applications/:id/locations", async (req, res, next) => {
   try {
+
     const app = await Application.findOne({ publicId: req.params.id });
     if (!app) return res.status(404).json({ error: "Application not found" });
     const filter = { applicationId: app._id };
