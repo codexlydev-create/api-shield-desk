@@ -685,7 +685,7 @@ function ApplicationDetailsPage() {
                           >
                             <td className="px-3 py-2 font-medium">
                               <Link
-                                to="/application/$applicationId/device/$deviceId"
+                                to="/device/$applicationId/$deviceId"
                                 params={{ applicationId, deviceId: d.id }}
                                 className="hover:underline"
                               >
@@ -730,7 +730,7 @@ function ApplicationDetailsPage() {
                                   className="gap-1"
                                 >
                                   <Link
-                                    to="/application/$applicationId/device/$deviceId"
+                                    to="/device/$applicationId/$deviceId"
                                     params={{ applicationId, deviceId: d.id }}
                                   >
                                     <Info className="h-3.5 w-3.5" /> More Details
