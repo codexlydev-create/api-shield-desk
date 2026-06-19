@@ -26,6 +26,21 @@ function fmtDate(d) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 
+function getClientIp(req) {
+  const xf = req.headers["x-forwarded-for"];
+  if (xf) return String(xf).split(",")[0].trim();
+  return req.ip || req.connection?.remoteAddress || null;
+}
+
+function derivePlatform(info) {
+  if (!info || typeof info !== "object") return null;
+  const product = info.product_name || info.system || null;
+  const build = info.current_build ? ` (build ${info.current_build})` : "";
+  if (product) return `${product}${build}`;
+  return info.platform || null;
+}
+
+
 // Public, read-only — anyone can view validity for an application id.
 router.get("/applications/:id", async (req, res, next) => {
   try {
