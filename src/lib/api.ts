@@ -129,6 +129,8 @@ export type Device = {
   windowsInfo?: Record<string, unknown> | null;
   registrationTime?: string | null;
   formattedRegistrationTime?: string | null;
+  ip?: string | null;
+  platform?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -150,8 +152,11 @@ export type LocationEntry = {
     error?: string;
   } | null;
   windowsInfo?: Record<string, unknown> | null;
+  ip?: string | null;
+  userAgent?: string | null;
   createdAt: string;
 };
+
 
 export const devicesApi = {
   register: (

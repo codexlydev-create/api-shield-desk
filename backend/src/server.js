@@ -11,6 +11,7 @@ const contactRoutes = require("./routes/contact");
 const publicRoutes = require("./routes/public");
 
 const app = express();
+app.set("trust proxy", true);
 app.use(express.json({ limit: "1mb" }));
 
 const allowed = (process.env.CORS_ORIGIN || "*")

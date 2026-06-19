@@ -18,6 +18,7 @@ import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ApplicationApplicationIdRouteImport } from './routes/application.$applicationId'
+import { Route as DeviceApplicationIdDeviceIdRouteImport } from './routes/device.$applicationId.$deviceId'
 import { Route as ApiPublicApplicationsIdPreviewRouteImport } from './routes/api.public.applications.$id.preview'
 
 const RegisterRoute = RegisterRouteImport.update({
@@ -66,6 +67,12 @@ const ApplicationApplicationIdRoute =
     path: '/application/$applicationId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const DeviceApplicationIdDeviceIdRoute =
+  DeviceApplicationIdDeviceIdRouteImport.update({
+    id: '/device/$applicationId/$deviceId',
+    path: '/device/$applicationId/$deviceId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicApplicationsIdPreviewRoute =
   ApiPublicApplicationsIdPreviewRouteImport.update({
     id: '/api/public/applications/$id/preview',
@@ -83,6 +90,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/application/$applicationId': typeof ApplicationApplicationIdRoute
+  '/device/$applicationId/$deviceId': typeof DeviceApplicationIdDeviceIdRoute
   '/api/public/applications/$id/preview': typeof ApiPublicApplicationsIdPreviewRoute
 }
 export interface FileRoutesByTo {
@@ -95,6 +103,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/application/$applicationId': typeof ApplicationApplicationIdRoute
+  '/device/$applicationId/$deviceId': typeof DeviceApplicationIdDeviceIdRoute
   '/api/public/applications/$id/preview': typeof ApiPublicApplicationsIdPreviewRoute
 }
 export interface FileRoutesById {
@@ -108,6 +117,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/register': typeof RegisterRoute
   '/application/$applicationId': typeof ApplicationApplicationIdRoute
+  '/device/$applicationId/$deviceId': typeof DeviceApplicationIdDeviceIdRoute
   '/api/public/applications/$id/preview': typeof ApiPublicApplicationsIdPreviewRoute
 }
 export interface FileRouteTypes {
@@ -122,6 +132,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/application/$applicationId'
+    | '/device/$applicationId/$deviceId'
     | '/api/public/applications/$id/preview'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -134,6 +145,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/application/$applicationId'
+    | '/device/$applicationId/$deviceId'
     | '/api/public/applications/$id/preview'
   id:
     | '__root__'
@@ -146,6 +158,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/register'
     | '/application/$applicationId'
+    | '/device/$applicationId/$deviceId'
     | '/api/public/applications/$id/preview'
   fileRoutesById: FileRoutesById
 }
@@ -159,6 +172,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RegisterRoute: typeof RegisterRoute
   ApplicationApplicationIdRoute: typeof ApplicationApplicationIdRoute
+  DeviceApplicationIdDeviceIdRoute: typeof DeviceApplicationIdDeviceIdRoute
   ApiPublicApplicationsIdPreviewRoute: typeof ApiPublicApplicationsIdPreviewRoute
 }
 
@@ -227,6 +241,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApplicationApplicationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/device/$applicationId/$deviceId': {
+      id: '/device/$applicationId/$deviceId'
+      path: '/device/$applicationId/$deviceId'
+      fullPath: '/device/$applicationId/$deviceId'
+      preLoaderRoute: typeof DeviceApplicationIdDeviceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/applications/$id/preview': {
       id: '/api/public/applications/$id/preview'
       path: '/api/public/applications/$id/preview'
@@ -247,6 +268,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RegisterRoute: RegisterRoute,
   ApplicationApplicationIdRoute: ApplicationApplicationIdRoute,
+  DeviceApplicationIdDeviceIdRoute: DeviceApplicationIdDeviceIdRoute,
   ApiPublicApplicationsIdPreviewRoute: ApiPublicApplicationsIdPreviewRoute,
 }
 export const routeTree = rootRouteImport
