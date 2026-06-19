@@ -20,6 +20,8 @@ const LocationSchema = new mongoose.Schema(
     formattedDateTime: { type: String, default: null },
     location: { type: mongoose.Schema.Types.Mixed, default: null },
     windowsInfo: { type: mongoose.Schema.Types.Mixed, default: null },
+    ip: { type: String, default: null },
+    userAgent: { type: String, default: null },
   },
   { timestamps: true },
 );
@@ -34,6 +36,8 @@ LocationSchema.methods.toClientJSON = function () {
     formattedDateTime: this.formattedDateTime || null,
     location: this.location || null,
     windowsInfo: this.windowsInfo || null,
+    ip: this.ip || null,
+    userAgent: this.userAgent || null,
     createdAt: this.createdAt.toISOString(),
   };
 };
