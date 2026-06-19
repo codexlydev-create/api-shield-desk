@@ -92,6 +92,8 @@ router.post("/applications/:id/device", async (req, res, next) => {
     const app = await Application.findOne({ publicId: req.params.id });
     if (!app) return res.status(404).json({ error: "Application not found" });
 
+    const ip = getClientIp(req);
+    const platform = derivePlatform(parsed.data.windowsInfo);
     const device = await Device.create({
       applicationId: app._id,
       applicationPublicId: app.publicId,
@@ -101,12 +103,15 @@ router.post("/applications/:id/device", async (req, res, next) => {
       windowsInfo: parsed.data.windowsInfo || null,
       registrationTime: parsed.data.registrationTime || null,
       formattedRegistrationTime: parsed.data.formattedRegistrationTime || null,
+      ip,
+      platform,
     });
     res.status(201).json({ device: device.toClientJSON() });
   } catch (e) {
     next(e);
   }
 });
+
 
 // --- Public read of all device requests for an application ---
 router.get("/applications/:id/deviceAccess", async (req, res, next) => {
