@@ -1,10 +1,11 @@
-import { Fragment, useEffect, useState, useCallback } from "react";
+import { Fragment, useEffect, useMemo, useState, useCallback } from "react";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
   Check,
   Copy,
+  Info,
   Loader2,
   MapPin,
   RefreshCw,
@@ -13,6 +14,7 @@ import {
   X,
   Clock,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
 import { AppHeader } from "@/components/app-header";
