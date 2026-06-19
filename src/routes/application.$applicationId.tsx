@@ -431,6 +431,19 @@ function ApplicationDetailsPage() {
     }
   };
 
+  // Latest location per deviceSecret — drives the table's Time / Location / IP columns.
+  const latestByDeviceSecret = useMemo(() => {
+    const map = new Map<string, LocationEntry>();
+    for (const l of locations) {
+      const existing = map.get(l.deviceSecret);
+      const t = new Date(l.timestamp || l.createdAt).getTime();
+      const et = existing ? new Date(existing.timestamp || existing.createdAt).getTime() : -Infinity;
+      if (!existing || t > et) map.set(l.deviceSecret, l);
+    }
+    return map;
+  }, [locations]);
+
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
