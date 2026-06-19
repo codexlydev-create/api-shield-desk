@@ -650,121 +650,126 @@ function ApplicationDetailsPage() {
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-border/60 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                        <th className="px-3 py-2 font-medium">Device name</th>
-                        <th className="px-3 py-2 font-medium">Secret</th>
+                        <th className="px-3 py-2 font-medium">Device</th>
+                        <th className="px-3 py-2 font-medium">Time</th>
+                        <th className="px-3 py-2 font-medium">Location</th>
+                        <th className="px-3 py-2 font-medium">IP</th>
+                        <th className="px-3 py-2 font-medium">Platform</th>
                         <th className="px-3 py-2 font-medium">Status</th>
-                        <th className="px-3 py-2 text-right font-medium">
-                          Actions
-                        </th>
+                        <th className="px-3 py-2 text-right font-medium">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {devices.map((d) => {
-                        const isOpen = expandedDevice === d.id;
-                        const hasDetails =
-                          !!d.windowsInfo || !!d.formattedRegistrationTime || !!d.registrationTime;
+                        const latest = latestByDeviceSecret.get(d.deviceSecret) || null;
+                        const lat = latest?.location?.latitude;
+                        const lng = latest?.location?.longitude;
+                        const when =
+                          latest?.formattedDateTime ||
+                          (latest?.timestamp
+                            ? new Date(latest.timestamp).toLocaleString()
+                            : latest
+                              ? new Date(latest.createdAt).toLocaleString()
+                              : "—");
+                        const ip = latest?.ip || d.ip || "—";
+                        const platform =
+                          d.platform ||
+                          (d.windowsInfo &&
+                            (((d.windowsInfo as Record<string, unknown>).product_name as string) ||
+                              ((d.windowsInfo as Record<string, unknown>).system as string))) ||
+                          "—";
                         return (
-                          <Fragment key={d.id}>
-                            <tr
-                              key={d.id}
-                              className="border-b border-border/40 last:border-0 hover:bg-muted/30"
-                            >
-                              <td className="px-3 py-2 font-medium">
-                                <button
-                                  type="button"
-                                  onClick={() => setExpandedDevice(isOpen ? null : d.id)}
-                                  className="text-left hover:underline"
-                                  disabled={!hasDetails}
-                                  title={hasDetails ? "Toggle details" : "No extra details"}
+                          <tr
+                            key={d.id}
+                            className="border-b border-border/40 last:border-0 hover:bg-muted/30"
+                          >
+                            <td className="px-3 py-2 font-medium">
+                              <Link
+                                to="/application/$applicationId/device/$deviceId"
+                                params={{ applicationId, deviceId: d.id }}
+                                className="hover:underline"
+                              >
+                                {d.deviceName}
+                              </Link>
+                              <div className="mt-0.5 flex items-center gap-1">
+                                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                                  {d.deviceSecret.slice(0, 12)}
+                                  {d.deviceSecret.length > 12 ? "…" : ""}
+                                </code>
+                                <CopyInline value={d.deviceSecret} />
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 font-mono text-xs">{when}</td>
+                            <td className="px-3 py-2 font-mono text-xs">
+                              {latest?.location?.error ? (
+                                <span className="text-destructive">{latest.location.error}</span>
+                              ) : typeof lat === "number" && typeof lng === "number" ? (
+                                <a
+                                  href={`https://www.google.com/maps?q=${lat},${lng}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-primary hover:underline"
                                 >
-                                  {d.deviceName}
-                                </button>
-                              </td>
-                              <td className="px-3 py-2">
-                                <div className="flex items-center gap-1">
-                                  <code className="rounded bg-muted px-2 py-1 font-mono text-xs">
-                                    {d.deviceSecret}
-                                  </code>
-                                  <CopyInline value={d.deviceSecret} />
-                                </div>
-                              </td>
-                              <td className="px-3 py-2">
-                                <StatusBadge status={d.status} />
-                              </td>
-                              <td className="px-3 py-2">
-                                <div className="flex items-center justify-end gap-2">
-                                  {canManage ? (
-                                    <>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={
-                                          actioningId === d.id ||
-                                          d.status === "approved"
-                                        }
-                                        onClick={() => updateStatus(d, "approved")}
-                                        className="gap-1 border-success/40 text-success hover:bg-success/10"
-                                      >
-                                        <Check className="h-3.5 w-3.5" /> Approve
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        disabled={
-                                          actioningId === d.id ||
-                                          d.status === "rejected"
-                                        }
-                                        onClick={() => updateStatus(d, "rejected")}
-                                        className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                      >
-                                        <X className="h-3.5 w-3.5" /> Reject
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => setDeleteTarget(d)}
-                                        className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
-                                        aria-label="Delete device"
-                                      >
-                                        <Trash2 className="h-3.5 w-3.5" /> Delete
-                                      </Button>
-                                    </>
-                                  ) : (
-                                    <span className="text-xs text-muted-foreground">
-                                      Owner only
-                                    </span>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                            {isOpen && hasDetails && (
-                              <tr key={d.id + "-details"} className="bg-muted/20">
-                                <td colSpan={4} className="px-3 py-3">
-                                  <div className="grid gap-2 text-xs sm:grid-cols-2">
-                                    {d.formattedRegistrationTime && (
-                                      <div>
-                                        <span className="text-muted-foreground">Registered: </span>
-                                        <span className="font-mono">
-                                          {d.formattedRegistrationTime}
-                                        </span>
-                                      </div>
-                                    )}
-                                    {d.registrationTime && (
-                                      <div>
-                                        <span className="text-muted-foreground">ISO: </span>
-                                        <span className="font-mono">{d.registrationTime}</span>
-                                      </div>
-                                    )}
-                                  </div>
-                                  {d.windowsInfo && (
-                                    <pre className="mt-2 overflow-x-auto rounded-md border border-border/60 bg-background/60 p-2 font-mono text-[11px]">
-{JSON.stringify(d.windowsInfo, null, 2)}
-                                    </pre>
-                                  )}
-                                </td>
-                              </tr>
-                            )}
-                          </Fragment>
+                                  {lat.toFixed(2)}, {lng.toFixed(2)}
+                                </a>
+                              ) : (
+                                "—"
+                              )}
+                            </td>
+                            <td className="px-3 py-2 font-mono text-xs">{ip}</td>
+                            <td className="px-3 py-2 text-xs">{platform}</td>
+                            <td className="px-3 py-2">
+                              <StatusBadge status={d.status} />
+                            </td>
+                            <td className="px-3 py-2">
+                              <div className="flex items-center justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  asChild
+                                  className="gap-1"
+                                >
+                                  <Link
+                                    to="/application/$applicationId/device/$deviceId"
+                                    params={{ applicationId, deviceId: d.id }}
+                                  >
+                                    <Info className="h-3.5 w-3.5" /> More Details
+                                  </Link>
+                                </Button>
+                                {canManage ? (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={actioningId === d.id || d.status === "approved"}
+                                      onClick={() => updateStatus(d, "approved")}
+                                      className="gap-1 border-success/40 text-success hover:bg-success/10"
+                                    >
+                                      <Check className="h-3.5 w-3.5" /> Approve
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      disabled={actioningId === d.id || d.status === "rejected"}
+                                      onClick={() => updateStatus(d, "rejected")}
+                                      className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                    >
+                                      <X className="h-3.5 w-3.5" /> Reject
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => setDeleteTarget(d)}
+                                      className="gap-1 border-destructive/40 text-destructive hover:bg-destructive/10"
+                                      aria-label="Delete device"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" /> Delete
+                                    </Button>
+                                  </>
+                                ) : null}
+                              </div>
+                            </td>
+                          </tr>
                         );
                       })}
                     </tbody>
@@ -782,6 +787,7 @@ function ApplicationDetailsPage() {
             </CardContent>
           </Card>
         </motion.div>
+
 
         <motion.div
           initial={{ opacity: 0, y: 12 }}
